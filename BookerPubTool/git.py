@@ -160,17 +160,11 @@ def git_push_per_commit(args):
         shell=True, cwd=dir,
     ).communicate()
     branches = get_all_branches(dir)
-    remote_exi =  f'remotes/{remote}/{work_branch}' in branches
-    if not remote_exi:
+    remote_branch = f'remotes/{remote}/{work_branch}'
+    if remote_branch not in branches:
         # 如果远程分支不存在，推送本地分支所有提交
         cids = get_branch_cids(dir, work_branch)
     else:
-        # 拉取远程分支，并重命名
-        remote_branch = f'{remote}-{work_branch}-{uuid.uuid4().hex}'
-        subp.Popen(
-            ['git', 'fetch', remote, f'{work_branch}:{remote_branch}'],
-            shell=True, cwd=dir,
-        ).communicate()
         # 查看远程库是否有新提交
         cids = get_branch_cids(dir, remote_branch, '^' + work_branch)
         if cids:
@@ -180,14 +174,9 @@ def git_push_per_commit(args):
         # 查看本地库的新提交
         cids = get_branch_cids(dir, work_branch, '^' + remote_branch)
     for cid in cids[::-1]:
-        # cid_branch = 'cid-' + cid
-        cmds = [
-            # 切换分支
-            # ['git', 'checkout', cid, '-f'], 
-            # ['git', 'branch', cid_branch],
-            # 提交改动
-            # ['git', 'push', remote, f'{cid_branch}:{work_branch}'],
-            ['git', 'push', remote, f'{cid}:{work_branch}'],
-        ]
-        for cmd in cmds:
-            subp.Popen(cmd, shell=True, cwd=dir).communicate()
+        # 提交改动
+        subp.Popen(
+            ['git', 'push', remote, f'{cid}:{work_branch}'], 
+            shell=True, cwd=dir
+        ).communicate()
+            
