@@ -176,7 +176,7 @@ def git_push_per_commit(args):
     for cid in cids[::-1]:
         # 提交改动
         subp.Popen(
-            ['git', 'push', remote, f'{cid}:{work_branch}'], 
+            ['git', 'push', remote, f'{cid}:refs/heads/{work_branch}'], 
             shell=True, cwd=dir
         ).communicate()
             
