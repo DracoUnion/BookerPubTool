@@ -173,6 +173,11 @@ def git_push_per_commit(args):
             return
         # 查看本地库的新提交
         cids = get_branch_cids(dir, work_branch, '^' + remote_branch)
+    # 自动 GC
+     subp.Popen(
+        ['git', 'gc', '--auto'], 
+        shell=True, cwd=dir
+    ).communicate()
     for cid in cids[::-1]:
         # 提交改动
         subp.Popen(
