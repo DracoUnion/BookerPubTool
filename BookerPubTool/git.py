@@ -57,7 +57,7 @@ def git_init(args):
     dir = args.dir
     origin = args.origin
     if not path.isdir(dir):
-        print('请提供目录')
+        print(f'{timestr()} 请提供目录')
         return
     # 检查是否是 GIT 本地仓库，不是则初始化
     if not path.isdir(path.join(dir, '.git')):
@@ -80,7 +80,7 @@ def git_init(args):
 def git_commit_per_file(args):
     dir = args.dir
     if not is_git_repo(dir):
-        print('请提供 GIT 本地仓库')
+        print(f'{timestr()} 请提供 GIT 本地仓库')
         return
     # 配置 UTF8 不转义
     config_utf8_unquote()
@@ -138,14 +138,14 @@ def git_push_per_commit(args):
     dir = args.dir
     work_branch = args.branch
     remote = args.remote
-    print(f'branch: {work_branch}, remote: {remote}')
+    print(f'{timestr()} branch: {work_branch}, remote: {remote}')
     if not is_git_repo(dir):
-        print('请提供 GIT 本地仓库')
+        print(f'{timestr()} 请提供 GIT 本地仓库')
         return
     # 检查分支是否存在
     branches = get_all_branches(dir)
     if work_branch not in branches:
-        print(f'分支 {work_branch} 不存在')
+        print(f'{timestr()} 分支 {work_branch} 不存在')
         return
     # 如果远程仓库名为地址，创建别名
     if remote.startswith('https://') or \
@@ -158,7 +158,7 @@ def git_push_per_commit(args):
     # 检查远程库是否存在
     remotes = get_remote_names(dir)
     if remote not in remotes:
-        print(f'远程仓库 {remote} 不存在')
+        print(f'{timestr()} 远程仓库 {remote} 不存在')
         return
             
     # 检查远程库是否有该分支
@@ -175,7 +175,7 @@ def git_push_per_commit(args):
         # 查看远程库是否有新提交
         cids = get_branch_cids(dir, remote_branch, '^' + work_branch)
         if cids:
-            print('远程仓库有新的提交，需要手动 git pull')
+            print(f'{timestr()} 远程仓库有新的提交，需要手动 git pull')
             print('\n'.join(cids))
             return
         # 查看本地库的新提交
