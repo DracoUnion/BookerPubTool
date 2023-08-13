@@ -3,6 +3,7 @@ import re
 from os import path
 import uuid
 import platform
+from .util import *
 
 def is_git_repo(dir):
     return path.isdir(dir) and \
@@ -92,6 +93,7 @@ def git_commit_per_file(args):
     files = get_untracked_files(dir)
     # 对于所有未跟踪的文件，单独提交
     for f in files:
+        print(f'{timestr()} {f}')
         cmds = [
             ['git', 'add', f],
             ['git', 'commit', '-m', f'add {f}'],
@@ -180,6 +182,7 @@ def git_push_per_commit(args):
         cids = get_branch_cids(dir, work_branch, '^' + remote_branch)
     for cid in cids[::-1]:
         # 提交改动
+        print(f'{timestr()} {cid}')
         subp.Popen(
             ['git', 'push', remote, f'{cid}:refs/heads/{work_branch}'], 
             shell=True, cwd=dir

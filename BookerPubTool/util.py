@@ -26,6 +26,10 @@ numPinyinMap = {
     '9': 'jiu',
 }
 
+def timestr():
+    now = datetime.now()
+    return f'[{now.year}-{now.month:02d}-{now.day:02d} {now.hour:02d}:{now.minute:02d}:{now.second:02d}]'
+
 def extname(fname):
     m = re.search(r'\.(\w+)$', fname.lower())
     return m.group(1) if m else ''
