@@ -92,7 +92,7 @@ def git_commit_per_file(args):
     # 列出所有未跟踪的文件
     files = get_untracked_files(dir)
     # 对于所有未跟踪的文件，单独提交
-    for f in files:
+    for f in files[:arg.count]:
         print(f'{timestr()} {f}')
         cmds = [
             ['git', 'add', f],
@@ -180,7 +180,7 @@ def git_push_per_commit(args):
             return
         # 查看本地库的新提交
         cids = get_branch_cids(dir, work_branch, '^' + remote_branch)
-    for cid in cids[::-1]:
+    for cid in cids[::-1][:arg.count]:
         # 提交改动
         print(f'{timestr()} {cid}')
         subp.Popen(

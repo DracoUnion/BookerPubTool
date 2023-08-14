@@ -78,12 +78,14 @@ def main():
 
     git_commit_parser = subparsers.add_parser("git-commit", help="git commit per file")
     git_commit_parser.add_argument('-d', "--dir", default='.', help="git repo dir")
+    git_commit_parser.add_argument('-n', "--count", type=int, default=1_000_000_000, help="num of files to commit")
     git_commit_parser.set_defaults(func=git_commit_per_file)
 
     git_push_parser = subparsers.add_parser("git-push", help="git push per commit")
     git_push_parser.add_argument('-d', "--dir", default='.', help="git repo dir")
     git_push_parser.add_argument("-r", "--remote", default='origin', help="remote repo to push")
     git_push_parser.add_argument("-b", "--branch", default='master', help="branch to push")
+    git_push_parser.add_argument('-n', "--count", type=int, default=1_000_000_000, help="num of commits to push")
     git_push_parser.set_defaults(func=git_push_per_commit)
 
     args = parser.parse_args()
