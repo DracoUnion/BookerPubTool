@@ -70,28 +70,28 @@ def publish_npm(args):
         need_rmdir = True
     # 检查目录
     if not path.isdir(dir):
-        print('请提供目录')
+        print(f'{timestr()} 请提供目录')
         return
     files = os.listdir(dir)
     if not 'index.html' in files or \
        not 'README.md' in files:
-        print('请提供文档')
+        print(f'{timestr()} 请提供文档')
         return
     # 读取元信息
     name = path.basename(dir)
     pkg_name = npm_filter_name(name)
     if args.expire:
         last_date = get_npm_last_ver_date(pkg_name)
-        print(f'最新：{last_date}，当前：{args.expire}')
+        print(f'{timestr()} 最新：{last_date}，当前：{args.expire}')
         if last_date >= args.expire:
-            print('最新包未过期，无需发布')
+            print(f'{timestr()} 最新包未过期，无需发布')
             return
     fix_ver = get_npm_fix_version(pkg_name)
     now = datetime.now()
     ver = f'{now.year}.{now.month}{now.day:02d}.{fix_ver}'
     readme = read_file(path.join(dir, 'README.md'), 'utf-8')
     desc = get_desc(readme)
-    print(f'name: {name}, pkg: {pkg_name}, ver: {ver}, desc: {desc}')
+    print(f'{timestr()} name: {name}, pkg: {pkg_name}, ver: {ver}, desc: {desc}')
     # 创建临时目录
     pkg_dir = path.join(tempfile.gettempdir(), uuid.uuid4().hex)
     os.mkdir(pkg_dir)

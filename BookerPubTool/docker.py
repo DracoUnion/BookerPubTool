@@ -67,13 +67,13 @@ def publish_docker(args):
         ebook2site(fname, dir)
         need_rmdir = True
     if not path.exists(dir):
-        print('目录不存在')
+        print(f'{timestr()} 目录不存在')
         return
     
     fnames = os.listdir(dir)
     if 'README.md' not in fnames or \
        'index.html' not in fnames:
-        print('请提供文档目录')
+        print(f'{timestr()} 请提供文档目录')
         return
         
     if 'Dockerfile' not in fnames:
@@ -82,15 +82,15 @@ def publish_docker(args):
     name = path.basename(dir).lower()
     if args.expire:
         last_date = get_docker_last_ver_date(name)
-        print(f'最新：{last_date}，当前：{args.expire}')
+        print(f'{timestr()} 最新：{last_date}，当前：{args.expire}')
         if last_date >= args.expire:
-            print('最新包未过期，无需发布')
+            print(f'{timestr()} 最新包未过期，无需发布')
             return
     now = datetime.now()
     ver = f'{now.year}.{now.month}.{now.day}.'
     fix_ver = get_docker_latest_fix_ver(name, cur=ver)
     ver += str(fix_ver)
-    print(f'name: {name}, ver: {ver}')
+    print(f'{timestr()} name: {name}, ver: {ver}')
     
     cmds = [
         f'docker build -t apachecn0/{name}:{ver} {dir}',

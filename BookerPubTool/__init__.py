@@ -4,7 +4,7 @@
 """pypi-book-publisher
 https://github.com/apachecn/pypi-book-publisher"""
 
-__author__ = "ApacheCN"
-__email__ = "apachecn@163.com"
+__author__ = "wizardforcel"
+__email__ = "wizard.z@qq.com"
 __license__ = "SATA"
-__version__ = "2023.2.9.6"
+__version__ = "2023.7.9.0"

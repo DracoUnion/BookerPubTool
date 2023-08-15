@@ -26,10 +26,7 @@ def ebook2site(fname, odir):
             r = subp.Popen(
                 ['ebook-convert', fname, tmp_fname], 
                 shell=True,
-                stdout = subp.PIPE,
-                stderr = subp.PIPE,
             ).communicate()
-            print((r[0] or r[1] or b'').decode('utf8', 'ignore'))
         else:
             shutil.copy(fname, tmp_fname)
         zip = zipfile.ZipFile(BytesIO(open(d('asset/epubjs-reader.zip'), 'rb').read()))
@@ -56,7 +53,7 @@ def ebook2site_handle(args):
         
     if not fname.endswith('.pdf') and \
        not fname.endswith('.epub'):
-        print('请提供 PDF 或 EPUB')
+        print(f'{timestr()} 请提供 PDF 或 EPUB')
         return 
     
     if not name: name = gen_proj_name(path.basename(fname))

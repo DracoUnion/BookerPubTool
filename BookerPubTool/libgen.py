@@ -128,13 +128,13 @@ def get_info(html):
 
 def process_file(args):
     fname = args.fname
-    print(fname)
+    print(f'{timestr()} {fname}')
     if not fname.endswith('.pdf') and \
        not fname.endswith('.epub'):
-        print('请提供 EPUB 或 PDF')
+        print(f'{timestr()} 请提供 EPUB 或 PDF')
         return
     md5 = calc_md5(open(fname, 'rb').read()).upper()
-    print(f'md5: {md5}')
+    print(f'{timestr()} md5: {md5}')
     
     url = urls['info'].replace('{md5}', md5)
     r = request_retry(
@@ -144,7 +144,7 @@ def process_file(args):
         proxies=proxy,
     )
     if r.status_code != 404:
-        print('已存在')
+        print(f'{timestr()} 已存在')
         return
         
     url = urls['upload']
@@ -160,7 +160,7 @@ def process_file(args):
         timeout=(8, None),
     )
     if r.status_code != 200 and r.status_code != 301:
-        print(f'上传失败：{r.status_code}')
+        print(f'{timestr()} 上传失败：{r.status_code}')
         return
     
     url = urls['submit'].replace('{md5}', md5)
@@ -170,11 +170,11 @@ def process_file(args):
         proxies=proxy,
     )
     if r.status_code != 200:
-        print(f'获取信息失败：{r.status_code}')
+        print(f'{timestr()} 获取信息失败：{r.status_code}')
         return
     info = get_info(r.text)
     proc_info(fname, info)
-    print(info)
+    print(f'{timestr()} {info}')
     r = request_retry(
         'POST', url, 
         data=info, 
@@ -182,9 +182,9 @@ def process_file(args):
         proxies=proxy,
     )
     if r.status_code != 200 and r.status_code != 301:
-        print(f'编辑信息失败：{r.status_code}')
+        print(f'{timestr()} 编辑信息失败：{r.status_code}')
         return
-    print('上传成功！')
+    print(f'{timestr()} 上传成功！')
     
 def process_file_safe(args):
     try:
