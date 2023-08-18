@@ -32,12 +32,12 @@ def get_docker_last_ver_date(name, org='apachecn0', proxy=None):
     ]
     return max(vers) if vers else '00010101'
 
-def get_docker_latest_fix_ver(name, org='apachecn0', cur=None):
+def get_docker_latest_fix_ver(name, org='apachecn0', cur=None, proxy=None):
     now = datetime.now()
     cur = cur or \
         f'{now.year}.{now.month}.{now.day}.'
     url = f'https://hub.docker.com/v2/repositories/{org}/{name}/tags/?page_size=100&page=1&name={cur}&ordering=last_updated'
-    r = requests.get(url)
+    r = requests.get(url, proxies={'http': proxy, 'https': proxy})
     if r.status_code == 404: return 0
     try: j = r.json()
     except: return 0
