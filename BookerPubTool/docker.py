@@ -13,9 +13,9 @@ FROM httpd:2.4
 COPY ./ /usr/local/apache2/htdocs/
 '''
 
-def get_docker_last_ver_date(name, org='apachecn0'):
+def get_docker_last_ver_date(name, org='apachecn0', proxy=None):
     url = f'https://hub.docker.com/v2/repositories/{org}/{name}/tags/?page_size=100&page=1&ordering=last_updated'
-    r = requests.get(url)
+    r = requests.get(url, proxies={'http': proxy, 'https': proxy})
     if r.status_code == 404: return '00010101'
     try: j = r.json()
     except: return '00010101'
@@ -81,7 +81,7 @@ def publish_docker(args):
         
     name = path.basename(dir).lower()
     if args.expire:
-        last_date = get_docker_last_ver_date(name)
+        last_date = get_docker_last_ver_date(name, proxy=args.proxy)
         print(f'{timestr()} 最新：{last_date}，当前：{args.expire}')
         if last_date >= args.expire:
             print(f'{timestr()} 最新包未过期，无需发布')

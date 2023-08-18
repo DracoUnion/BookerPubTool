@@ -18,6 +18,7 @@ def main():
     docker_pub_parser = subparsers.add_parser("pub-docker", help="publish book to dockerhub")
     docker_pub_parser.add_argument("dir", help="dir")
     docker_pub_parser.add_argument("-e", "--expire", help="expire date for old packages")
+    docker_pub_parser.add_argument("-p", "--proxy", help="http proxy")
     docker_pub_parser.set_defaults(func=publish_docker)
 
     pypi_pub_parser = subparsers.add_parser("pub-pypi", help="publish book to pypi")
