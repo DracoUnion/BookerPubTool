@@ -26,6 +26,11 @@ numPinyinMap = {
     '9': 'jiu',
 }
 
+def exec_cmd(cmd, **kw):
+    kw.setdefault('shell', True)
+    print(f'{timestr()} cmd: {cmd}')
+    return subp.Popen(cmd, **kw).communicate()
+
 def timestr():
     now = datetime.now()
     return f'[{now.year}-{now.month:02d}-{now.day:02d} {now.hour:02d}:{now.minute:02d}:{now.second:02d}]'

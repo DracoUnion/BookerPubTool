@@ -10,29 +10,26 @@ def is_git_repo(dir):
         path.isdir(path.join(dir, '.git'))
 
 def get_remote_names(dir):
-    return subp.Popen(
-        'git remote',
-        shell=True, cwd=dir,
+    return exec_cmd(
+        'git remote', cwd=dir,
         stdout=subp.PIPE,
         stderr=subp.PIPE,
-    ).communicate()[0].decode('utf8').split('\n')
+    )[0].decode('utf8').split('\n')
 
 def set_remote(dir, name, url):
     # 判断是否有远程库
     remotes = get_remote_names(dir)
     if name in remotes:
-        cmd = ['git', 'remote', 'rm', name]
-    cmd = ['git', 'remote', 'add', name, url]
-    subp.Popen(cmd, shell=True, cwd=dir).communicate()
+        exec_cmd(['git', 'remote', 'rm', name], cwd=dir)
+    exec_cmd(['git', 'remote', 'add', name, url], cwd=dir)
     
 
 def get_status(dir):
-    lines = subp.Popen(
-        'git status -s -u',
-        shell=True, cwd=dir,
+    lines = exec_cmd(
+        'git status -s -u', cwd=dir,
         stdout=subp.PIPE,
         stderr=subp.PIPE,
-    ).communicate()[0].decode('utf8').split('\n')
+    )[0].decode('utf8').split('\n')
     status_map = {}
     for l in lines:
         tp = l[:2].strip()
@@ -47,10 +44,7 @@ def get_untracked_files(dir):
     return get_status(dir).get('??', [])
             
 def config_utf8_unquote():
-    subp.Popen(
-        'git config --global core.quotepath false', 
-        shell=True
-    ).communicate()
+    exec_cmd('git config --global core.quotepath false')
             
 # 初始化仓库
 def git_init(args):
@@ -61,18 +55,12 @@ def git_init(args):
         return
     # 检查是否是 GIT 本地仓库，不是则初始化
     if not path.isdir(path.join(dir, '.git')):
-        subp.Popen(
-            'git init',
-            shell=True, cwd=dir,
-        ).communicate()
+        exec_cmd('git init', cwd=dir)
     # 检查是否存在分支
     branches = get_all_branches(dir)
     if not branches:
         # 创建空提交来保证能够执行所有操作
-        subp.Popen(
-            'git commit -m init --allow-empty',
-            shell=True, cwd=dir,
-        ).communicate()
+        exec_cmd('git commit -m init --allow-empty', cwd=dir)
     # 如果提供了 Origin 远程地址则设置
     if origin: set_remote(dir, 'origin', origin)
 
@@ -85,10 +73,7 @@ def git_commit_per_file(args):
     # 配置 UTF8 不转义
     config_utf8_unquote()
     # 自动 GC
-    subp.Popen(
-        ['git', 'gc', '--auto'], 
-        shell=True, cwd=dir
-    ).communicate()
+    exec_cmd(['git', 'gc', '--auto'], cwd=dir)
     # 列出所有未跟踪的文件
     files = get_untracked_files(dir)
     # 对于所有未跟踪的文件，单独提交
@@ -99,38 +84,38 @@ def git_commit_per_file(args):
             ['git', 'commit', '-m', f'add {f}'],
         ]
         for cmd in cmds:
-            subp.Popen(cmd, shell=True, cwd=dir).communicate()
+            exec_cmd(cmd, cwd=dir)
 
 def ext_cid_from_gitlog(log):
     return re.findall(r'commit (\w+)', log)
 
 def get_cur_branch(dir):
-    return subp.Popen(
+    return exec_cmd(
         'git branch --show-current', 
-        shell=True, cwd=dir,
+        cwd=dir,
         stdout=subp.PIPE,
         stderr=subp.PIPE,
-    ).communicate()[0].decode('utf8')
+    )[0].decode('utf8')
 
 def get_all_branches(dir):
-    branches = subp.Popen(
-        ['git', 'branch', '-a'],
-        shell=True, cwd=dir,
+    branches = exec_cmd(
+        ['git', 'branch', '-a'], 
+        cwd=dir,
         stdout=subp.PIPE,
         stderr=subp.PIPE,
-    ).communicate()[0].decode('utf8').split('\n')
+    )[0].decode('utf8').split('\n')
     branches = [b[2:] for b in branches]
     return list(filter(None, branches))
 
 def get_branch_cids(dir, *branches):
     if platform.system().lower() == 'windows':
         branches = [b.replace('^', '^^') for b in branches]
-    l = subp.Popen(
-        ['git', 'log', *branches],
-        shell=True, cwd=dir,
+    l = exec_cmd(
+        ['git', 'log', *branches], 
+        cwd=dir,
         stdout=subp.PIPE,
         stderr=subp.PIPE,
-    ).communicate()[0].decode('utf8')
+    )[0].decode('utf8')
     return ext_cid_from_gitlog(l)
 
 # 逐个推送提交
@@ -151,10 +136,7 @@ def git_push_per_commit(args):
     if remote.startswith('https://') or \
         remote.startswith('git@'):
             url, remote = remote, uuid.uuid4().hex
-            subp.Popen(
-                ['git', 'remote', 'add', remote, url],
-                shell=True, cwd=dir,
-            ).communicate()
+            exec_cmd(['git', 'remote', 'add', remote, url], cwd=dir)
     # 检查远程库是否存在
     remotes = get_remote_names(dir)
     if remote not in remotes:
@@ -162,10 +144,7 @@ def git_push_per_commit(args):
         return
             
     # 检查远程库是否有该分支
-    subp.Popen(
-        ['git', 'remote', 'update', remote],
-        shell=True, cwd=dir,
-    ).communicate()
+    exec_cmd(['git', 'remote', 'update', remote], cwd=dir)
     branches = get_all_branches(dir)
     remote_branch = f'remotes/{remote}/{work_branch}'
     if remote_branch not in branches:
@@ -183,8 +162,6 @@ def git_push_per_commit(args):
     for cid in cids[::-1][:args.count]:
         # 提交改动
         print(f'{timestr()} {cid}')
-        subp.Popen(
-            ['git', 'push', remote, f'{cid}:refs/heads/{work_branch}'], 
-            shell=True, cwd=dir
-        ).communicate()
+        cmd = ['git', 'push', remote, f'{cid}:refs/heads/{work_branch}']
+        exec_cmd(cmd, cwd=dir)
             
