@@ -3,6 +3,8 @@ import re
 from os import path
 import uuid
 import platform
+import time
+from multiprocessing import Process
 from .util import *
 
 def is_git_repo(dir):
@@ -64,6 +66,25 @@ def git_init(args):
     # 如果提供了 Origin 远程地址则设置
     if origin: set_remote(dir, 'origin', origin)
 
+def git_commit_handle(args):
+    if not args.reset:
+        git_commit_per_file(args)
+        return
+        
+    p = Process(target=git_commit_per_file, args=[args])
+    p.start()
+    time0 = time.time()
+    while p.is_alive():
+        if time.time() - time0 >= args.reset:
+            # 重置子进程
+            p.terminate()
+            p.close()
+            p = Process(target=git_commit_per_file, args=[args])
+            p.start
+        time.sleep(1)
+        
+    p.close()
+
 # 将未跟踪文件一个一个添加并提交
 def git_commit_per_file(args):
     dir = args.dir
@@ -117,6 +138,25 @@ def get_branch_cids(dir, *branches):
         stderr=subp.PIPE,
     )[0].decode('utf8')
     return ext_cid_from_gitlog(l)
+
+def git_push_handle(args):
+    if not args.reset:
+        git_push_per_commit(args)
+        return
+        
+    p = Process(target=git_push_per_commit, args=[args])
+    p.start()
+    time0 = time.time()
+    while p.is_alive():
+        if time.time() - time0 >= args.reset:
+            # 重置子进程
+            p.terminate()
+            p.close()
+            p = Process(target=git_push_per_commit, args=[args])
+            p.start
+        time.sleep(1)
+        
+    p.close()
 
 # 逐个推送提交
 def git_push_per_commit(args):
