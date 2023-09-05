@@ -157,6 +157,7 @@ def process_file(args):
         files=files, 
         headers=default_hdrs,
         proxies=proxy,
+        timeout=(8, None),
     )
     if r.status_code != 200 and r.status_code != 301:
         print(f'{timestr()} 上传失败：{r.status_code}')
