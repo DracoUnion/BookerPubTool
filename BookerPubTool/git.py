@@ -77,7 +77,8 @@ def git_commit_handle(args):
     while p.is_alive():
         if time.time() - time0 >= args.reset:
             # 重置子进程
-            while p.is_alive(): p.terminate()
+            p.terminate()
+            p.join()
             p.close()
             p = Process(target=git_commit_per_file, args=[args])
             p.start
@@ -150,7 +151,8 @@ def git_push_handle(args):
     while p.is_alive():
         if time.time() - time0 >= args.reset:
             # 重置子进程
-            while p.is_alive(): p.terminate()
+            p.terminate()
+            p.join()
             p.close()
             p = Process(target=git_push_per_commit, args=[args])
             p.start
