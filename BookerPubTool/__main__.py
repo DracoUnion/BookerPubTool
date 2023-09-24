@@ -81,6 +81,8 @@ def main():
     git_commit_parser.add_argument('-d', "--dir", default='.', help="git repo dir")
     git_commit_parser.add_argument('-n', "--count", type=int, default=1_000_000_000, help="num of files to commit")
     git_commit_parser.add_argument('-x', "--reset", type=int, default=0, help="num of seceonds after which to reset process")
+    git_commit_parser.add_argument('-u', "--user", default='unknown', help="git config user.name")
+    git_commit_parser.add_argument('-e', "--email", default='unknown@example.com', help="git config user.email")
     git_commit_parser.set_defaults(func=git_commit_handle)
 
     git_push_parser = subparsers.add_parser("git-push", help="git push per commit")
