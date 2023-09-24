@@ -49,8 +49,8 @@ def config_utf8_unquote():
     exec_cmd('git config --global core.quotepath false')
             
 def config_username_email(dir, un, email):
-    exec_cmd(['git', 'config', 'set', 'user.name', un], cwd=dir)
-    exec_cmd(['git', 'config', 'set', 'user.email', email], cwd=dir)
+    exec_cmd(['git', 'config', 'user.name', un], cwd=dir)
+    exec_cmd(['git', 'config', 'user.email', email], cwd=dir)
 
 # 初始化仓库
 def git_init(args):
