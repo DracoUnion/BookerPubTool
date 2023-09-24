@@ -75,6 +75,8 @@ def main():
     git_init_parser = subparsers.add_parser("git-init", help="init git repo")
     git_init_parser.add_argument('-d', "--dir", default='.', help="git repo dir")
     git_init_parser.add_argument("-o", "--origin", help="remote origin url")
+    git_init_parser.add_argument('-u', "--user", default='unknown', help="git config user.name")
+    git_init_parser.add_argument('-e', "--email", default='unknown@example.com', help="git config user.email")
     git_init_parser.set_defaults(func=git_init)
 
     git_commit_parser = subparsers.add_parser("git-commit", help="git commit per file")

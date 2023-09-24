@@ -62,6 +62,8 @@ def git_init(args):
     # 检查是否是 GIT 本地仓库，不是则初始化
     if not path.isdir(path.join(dir, '.git')):
         exec_cmd('git init', cwd=dir)
+    # 配置用户名和邮箱
+    config_username_email(dir, args.user, args.email)
     # 检查是否存在分支
     branches = get_all_branches(dir)
     if not branches:
