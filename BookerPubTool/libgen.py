@@ -26,6 +26,9 @@ default_hdrs = {
 series = None
 proxy = None
 
+def basename_noext(name):
+    return re.sub(r'\..+?$', '', path.basename(name))
+
 def calc_md5(bts):
     hash = hashlib.md5()
     hash.update(bts)
@@ -45,10 +48,7 @@ def proc_info(fname, info):
         hdlrs[series](fname, info)
 
 def proc_itebooks_info(fname, info):
-    title = path.basename(fname) \
-        .replace('.epub', '') \
-        .replace('.pdf', '')
-    info['title'] = title
+    info['title'] = basename_noext(fname)
     m = re.search(r'\d{4}', fname)
     if m:
         year = m.group()
@@ -60,6 +60,7 @@ def proc_itebooks_info(fname, info):
     info['publisher'] = 'iBooker it-ebooks'
     
 def proc_bqg_info(fname, info):
+    info['title'] = basename_noext(fname)
     ori_info = path.basename(fname) \
         .replace('.epub', '').split(' - ')
     info['authors'] = ori_info[1]
@@ -67,16 +68,16 @@ def proc_bqg_info(fname, info):
     info['publisher'] = 'BiQuGe'
 
 def proc_ln_info(fname, info):
-    ori_info = path.basename(fname) \
-        .replace('.epub', '').split(' - ')
+    info['title'] = basename_noext(fname)
+    ori_info = info['title'].split(' - ')
     info['authors'] = ori_info[1]
     info['edition'] = ori_info[2]
     info['year'] = ori_info[2][:-4]
     info['publisher'] = 'Wenku8.Net'
     
 def proc_gn_info(fname, info):
-    ori_info = path.basename(fname) \
-        .replace('.epub', '').split(' - ')
+    info['title'] = basename_noext(fname)
+    ori_info = info['title'].split(' - ')
     info['authors'] = ori_info[1]
     info['edition'] = ori_info[2]
     info['year'] = ori_info[2][:-4]
@@ -84,17 +85,18 @@ def proc_gn_info(fname, info):
 
     
 def proc_dmzj_info(fname, info):
-    ori_info = path.basename(fname) \
-        .replace('.epub', '').split(' - ')
+    ori_info = basename_noext(fname).split(' - ')
     info['title'] = ori_info[0] + ' - ' + ori_info[1]
     info['authors'] = ori_info[2]
     info['publisher'] = 'DMZJ'
     
 def proc_ixinzhi_info(fname, info):
+    info['title'] = basename_noext(fname)
     info['authors'] = 'ixinzhi'
     info['publisher'] = 'iBooker xinzhi'
     
 def proc_nh_info(fname, info):
+    info['title'] = basename_noext(fname)
     rm = re.findall(RE_INFO, \
         path.basename(fname).replace('.epub', ''))
     if len(rm) == 0:
