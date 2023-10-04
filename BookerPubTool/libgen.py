@@ -60,24 +60,24 @@ def proc_itebooks_info(fname, info):
     info['publisher'] = 'iBooker it-ebooks'
     
 def proc_bqg_info(fname, info):
-    info['title'] = basename_noext(fname)
-    ori_info = path.basename(fname) \
-        .replace('.epub', '').split(' - ')
+    ori_info = basename_noext(fname).split(' - ')
+    info['title'] = ori_info[0]
     info['authors'] = ori_info[1]
-    info['edition'] = ori_info[2]
-    info['publisher'] = 'BiQuGe'
+    chs = ori_info[2][:-3]
+    info['edition'] = f'共{chs}章'
+    info['publisher'] = '笔趣阁'
 
 def proc_ln_info(fname, info):
-    info['title'] = basename_noext(fname)
     ori_info = info['title'].split(' - ')
+    info['title'] = ori_info[0]
     info['authors'] = ori_info[1]
     info['edition'] = ori_info[2]
     info['year'] = ori_info[2][:-4]
     info['publisher'] = 'Wenku8.Net'
     
 def proc_gn_info(fname, info):
-    info['title'] = basename_noext(fname)
-    ori_info = info['title'].split(' - ')
+    ori_info = basename_noext(fname).split(' - ')
+    info['title'] = ori_info[0]
     info['authors'] = ori_info[1]
     info['edition'] = ori_info[2]
     info['year'] = ori_info[2][:-4]
