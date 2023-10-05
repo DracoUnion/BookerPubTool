@@ -27,7 +27,7 @@ series = None
 proxy = None
 
 def basename_noext(name):
-    return re.sub(r'\..+?$', '', path.basename(name))
+    return re.sub(r'\.\w+$', '', path.basename(name))
 
 def calc_md5(bts):
     hash = hashlib.md5()
