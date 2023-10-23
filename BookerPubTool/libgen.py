@@ -49,7 +49,7 @@ def proc_info(fname, info):
 
 def proc_itebooks_info(fname, info):
     info['title'] = basename_noext(fname)
-    m = re.search(r'\d{4}', fname)
+    m = re.search(r'(?<=it-ebooks-)\d{4}', fname)
     if m:
         year = m.group()
         info['year'] = year
