@@ -27,7 +27,7 @@ numPinyinMap = {
 }
 
 def exec_cmd(cmd, **kw):
-    if not (sys.platform == 'linux' and isinstance(cmd, list))
+    if not (sys.platform == 'linux' and isinstance(cmd, list)):
         kw.setdefault('shell', True)
     print(f'{timestr()} cmd: {cmd}')
     return subp.Popen(cmd, **kw).communicate()
