@@ -116,9 +116,6 @@ def git_commit_per_file(args):
         for cmd in cmds:
             exec_cmd(cmd, cwd=dir)
 
-def ext_cid_from_gitlog(log):
-    return re.findall(r'commit (\w+)', log)
-
 def get_cur_branch(dir):
     return exec_cmd(
         'git branch --show-current', 
@@ -140,13 +137,13 @@ def get_all_branches(dir):
 def get_branch_cids(dir, *branches):
     if platform.system().lower() == 'windows':
         branches = [b.replace('^', '^^') for b in branches]
-    l = exec_cmd(
-        ['git', 'log', *branches], 
+    lines = exec_cmd(
+        ['git', 'log', *branches, '--pretty=format:%H'], 
         cwd=dir,
         stdout=subp.PIPE,
         stderr=subp.PIPE,
     )[0].decode('utf8')
-    return ext_cid_from_gitlog(l)
+    return lines.split('\n')
 
 def git_push_handle(args):
     if not args.reset:
