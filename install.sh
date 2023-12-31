@@ -1,2 +1,1 @@
-pip uninstall BookerPubTool -y
-python setup.py install
+pip install .
