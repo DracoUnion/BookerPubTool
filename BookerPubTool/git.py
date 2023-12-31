@@ -143,7 +143,8 @@ def get_branch_cids(dir, *branches):
         stdout=subp.PIPE,
         stderr=subp.PIPE,
     )[0].decode('utf8')
-    return lines.split('\n')
+    # 记得过滤空行
+    return [l for l in lines.split('\n') if l.strip()]
 
 def git_push_handle(args):
     if not args.reset:
