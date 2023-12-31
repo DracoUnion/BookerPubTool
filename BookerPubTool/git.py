@@ -201,7 +201,8 @@ def git_push_per_commit(args):
         # 查看远程库是否有新提交
         cids = get_branch_cids(dir, remote_branch, '^' + work_branch)
         if cids:
-            print(f'{timestr()} 远程仓库有新的提交，需要手动 git pull')
+            cid_str = ','.join(cids)
+            print(f'{timestr()} 远程仓库有新的提交，需要手动 git pull：{cid_str}')
             print('\n'.join(cids))
             return
         # 查看本地库的新提交
