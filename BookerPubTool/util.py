@@ -12,6 +12,8 @@ import re
 import stat
 import jieba
 import xpinyin
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 numPinyinMap = {
     '0': 'ling',
@@ -116,3 +118,34 @@ def request_retry(method, url, retry=10, check_status=False, **kw):
         except Exception as e:
             print(f'{url} retry {i}')
             if i == retry - 1: raise e
+
+
+def parse_cookie(cookie):
+    # cookie.split('; ').map(x => x.split('='))
+    #     .filter(x => x.length >= 2)
+    #     .reduce((x, y) =>  {x[y[0]] = y[1]; return x}, {})
+    kvs = [kv.split('=') for kv in cookie.split('; ')]
+    res = {kv[0]:kv[1] for kv in kvs if len(kv) >= 2}
+    return res
+        
+def set_driver_cookie(driver, cookie):
+    if isinstance(cookie, str):
+        cookie = parse_cookie(cookie)
+    for k, v in cookie.items():
+        driver.add_cookie({'name': k, 'value': v})
+
+def create_driver():
+    options = Options()
+    options.add_argument('--headless')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--log-level=3')
+    options.add_argument(f'--user-agent={UA}')
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    driver = webdriver.Chrome(options=options)
+    driver.set_script_timeout(1000)
+    # StealthJS
+    stealth = open(d('stealth.min.js')).read()
+    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": stealth
+    })
+    return driver
