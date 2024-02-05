@@ -22,7 +22,7 @@ def pub_csdn(args):
     el_title.send_key(title)
     el_cont.send_key(cont)
     el_btn_pub = driver.find_element_by_css_selector('button.btn-publish')
-    if not el_btn_pub
+    if not el_btn_pub:
         driver.close()
         print('找不到发布按钮元素！')
         return
