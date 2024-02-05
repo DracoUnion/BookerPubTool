@@ -8,6 +8,7 @@ from .ebook2site import *
 from .libgen import *
 from .zhihu_msger import *
 from .git import *
+from .csdn import *
 
 def main():
     parser = argparse.ArgumentParser(prog="BookerPubTool", formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -94,6 +95,12 @@ def main():
     git_push_parser.add_argument('-n', "--count", type=int, default=1_000_000_000, help="num of commits to push")
     git_push_parser.add_argument('-x', "--reset", type=int, default=0, help="num of seceonds after which to reset process")
     git_push_parser.set_defaults(func=git_push_handle)
+
+    csdn_parser = subparsers.add_parser("csdn", help="csdn post")
+    csdn_parser.add_argument('fname', help="md file name")
+    csdn_parser.add_argument("-c", "--cookie", default=os.environ.get('CSDN_COOKIE', ''), help="csdn cookie")
+    csdn_parser.set_defaults(func=pub_csdn)
+
 
     args = parser.parse_args()
     args.func(args)

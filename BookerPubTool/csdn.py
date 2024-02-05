@@ -28,3 +28,5 @@ def pub_csdn(args):
         return
     el_btn_pub.click()
     
+    # driver.close()
+    
