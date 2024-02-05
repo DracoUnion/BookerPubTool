@@ -149,3 +149,10 @@ def create_driver():
         "source": stealth
     })
     return driver
+    
+    
+def get_md_title(text):
+    m = re.search(RE_TITLE, text, flags=re.M)
+    if not m:
+        return None, (None, None)
+    return m.group(1).strip(), m.span(1)
