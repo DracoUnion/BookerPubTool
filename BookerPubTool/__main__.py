@@ -25,6 +25,7 @@ def main():
     pypi_pub_parser = subparsers.add_parser("pub-pypi", help="publish book to pypi")
     pypi_pub_parser.add_argument("dir", help="dir")
     pypi_pub_parser.add_argument("-e", "--expire", help="expire date for old packages")
+    pypi_pub_parser.add_argument("-w", "--wait", type=int, default=0, help="wait sec")
     pypi_pub_parser.set_defaults(func=publish_pypi)
     
     pypi_config_parser = subparsers.add_parser("conf-pypi", help="configure pypi token")

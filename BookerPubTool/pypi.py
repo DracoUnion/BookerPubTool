@@ -9,6 +9,7 @@ import shutil
 import os
 from os import path
 import re
+import time
 import stat
 from .util import *
 from .ebook2site import ebook2site
@@ -154,4 +155,5 @@ def publish_pypi(args):
     os.chdir('..')
     rmtree(pkg_dir)
     if need_rmdir: rmtree(dir)
+    time.sleep(args.wait)
 
