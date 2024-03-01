@@ -44,8 +44,11 @@ def get_pypi_fix_version(name, curr=None):
     else:
         return int(ver.split('.')[-1]) + 1
     
-def get_pypi_last_ver_date(name):
-    r = requests.get(f'https://pypi.org/project/{name}/')
+def get_pypi_last_ver_date(name, proxy=None):
+    r = requests.get(
+        f'https://pypi.org/project/{name}/',
+        proxies={'http': proxy, 'https': proxy},
+    )
     if r.status_code == 404:
         return '00010101'
     root = pq(r.text)
@@ -89,7 +92,7 @@ def publish_pypi(args):
     # 读取元信息
     name = path.basename(dir)
     if args.expire:
-        last_date = get_pypi_last_ver_date(name)
+        last_date = get_pypi_last_ver_date(name, args.proxy)
         print(f'{timestr()} 最新：{last_date}，当前：{args.expire}')
         if last_date >= args.expire:
             print(f'{timestr()} 最新包未过期，无需发布')
@@ -149,7 +152,8 @@ def publish_pypi(args):
     ).communicate()
     subp.Popen(
         ['twine', 'upload', 'dist/*', '-u', un, '-p', pw],
-        shell=True
+        shell=True,
+        env={'HTTPS_PROXY': args.proxy, 'HTTP_PROXY': args.proxy},
     ).communicate()
     # 删除临时目录
     os.chdir('..')
