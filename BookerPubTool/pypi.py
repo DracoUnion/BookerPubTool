@@ -153,7 +153,7 @@ def publish_pypi(args):
     subp.Popen(
         ['twine', 'upload', 'dist/*', '-u', un, '-p', pw],
         shell=True,
-        env=dict(os.environ, HTTPS_PROXY=args.proxy, HTTP_PROXY=args.proxy),
+        # env=dict(os.environ, HTTPS_PROXY=args.proxy, HTTP_PROXY=args.proxy),
     ).communicate()
     # 删除临时目录
     os.chdir('..')
