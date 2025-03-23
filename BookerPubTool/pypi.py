@@ -36,9 +36,9 @@ def get_pypi_fix_version(name, curr=None):
     if r.status_code != 200:
         return 0
     root = pq(r.text)
-    ver = root('h1.package-header__name')[0] \
-            .text.strip() \
-            .split(' ')[1]
+    el_ver = root('h1.package-header__name')
+    if len(el_ver) == 0: return 0
+    ver = el_ver[0].text.strip().split(' ')[1]
     if not ver.startswith(curr + '.'):
         return 0
     else:
