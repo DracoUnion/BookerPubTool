@@ -33,7 +33,7 @@ def get_pypi_fix_version(name, curr=None):
     curr = curr or \
         f'{now.year}.{now.month}.{now.day}'
     r = requests.get(f'https://pypi.org/project/{name}/')
-    if r.status_code == 404:
+    if r.status_code != 200:
         return 0
     root = pq(r.text)
     ver = root('h1.package-header__name')[0] \
