@@ -52,9 +52,9 @@ def get_pypi_last_ver_date(name, proxy=None):
     if r.status_code == 404:
         return '00010101'
     root = pq(r.text)
-    ver = root('h1.package-header__name')[0] \
-            .text.strip() \
-            .split(' ')[1]
+    el_ver = root('h1.package-header__name')
+    if len(el_ver) == 0: return '00010101'
+    ver = el_ver[0].text.strip().split(' ')[1]
     ver = ver.split('.')[:-1]
     return ver[0].zfill(4) + ver[1].zfill(2) + ver[2].zfill(2)
 
