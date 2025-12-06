@@ -98,10 +98,6 @@ def main():
     git_push_parser.add_argument('-x', "--reset", type=int, default=0, help="num of seceonds after which to reset process")
     git_push_parser.set_defaults(func=git_push_handle)
 
-    csdn_parser = subparsers.add_parser("csdn", help="csdn post")
-    csdn_parser.add_argument('fname', help="md file name")
-    csdn_parser.add_argument("-c", "--cookie", default=os.environ.get('CSDN_COOKIE', ''), help="csdn cookie")
-    csdn_parser.set_defaults(func=pub_csdn)
 
 
     args = parser.parse_args()
