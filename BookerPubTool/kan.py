@@ -37,7 +37,7 @@ def pub_kancloud(args):
     config_username_email(doc_dir, args.un, f'{args.un}@kancloud.cn')
     exec_cmd('git commit -am init', cwd=doc_dir)
     set_remote(doc_dir, 'origin', '')
-    exec_cmd('git push orgin master', cwd=doc_dir)
+    exec_cmd('git push orgin master -f', cwd=doc_dir)
 
     kan_toggle(args.un, doc_id, args.cookie, 'download', True)
     r = kan_release(args.un, doc_id, args.cookie)
