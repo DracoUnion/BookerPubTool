@@ -20,10 +20,12 @@ def pub_kancloud(args):
         return
 
     doc_dir = path.join(tempfile.gettempdir(), uuid.uuid4().hex)
+    print(f'创建目录 {doc_dir}')
     shutil.copytree(args.dir, doc_dir)
     # os.chdir(doc_dir)
 
     doc_id = path.basename(args.dir)
+    print(f'创建仓库 {args.un}/{doc_id}')
     if not kan_exists(args.un, doc_id):
         readme = open(path.join(doc_dir, 'README.md'), encoding='utf8').read()
         title, _ = get_md_title(readme)
