@@ -19,7 +19,7 @@ def pub_kancloud(args):
         print('请提供文档目录！')
         return
 
-    doc_dir = path.join(tempfile.gettempdir, uuid.uuid4().hex)
+    doc_dir = path.join(tempfile.gettempdir(), uuid.uuid4().hex)
     shutil.copytree(args.dir, doc_dir)
     # os.chdir(doc_dir)
 
