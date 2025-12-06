@@ -152,7 +152,8 @@ def create_driver(headless=True):
         "source": stealth
     })
     return driver
-    
+
+RE_TITLE = r'^#+\x20+(.+?)$'
     
 def get_md_title(text):
     m = re.search(RE_TITLE, text, flags=re.M)
