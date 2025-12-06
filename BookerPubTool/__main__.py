@@ -8,7 +8,7 @@ from .ebook2site import *
 from .libgen import *
 from .zhihu_msger import *
 from .git import *
-from .csdn import *
+from .kan import *
 
 def main():
     parser = argparse.ArgumentParser(prog="BookerPubTool", formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -98,6 +98,11 @@ def main():
     git_push_parser.add_argument('-x', "--reset", type=int, default=0, help="num of seceonds after which to reset process")
     git_push_parser.set_defaults(func=git_push_handle)
 
+    kan_parser = subparsers.add_parser("kancloud", help="pub kancloud")
+    kan_parser.add_argument("dir", help="doc dir")
+    kan_parser.add_argument("-u", "--un", default='wizardforcel', help="kancloud un")
+    kan_parser.add_argument("-c", "--cookie", default=os.environ.get('KAN_COOKIE', ''), help="kancloud cookie")
+    kan_parser.set_defaults(func=pub_kancloud)
 
 
     args = parser.parse_args()
