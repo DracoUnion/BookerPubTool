@@ -21,7 +21,7 @@ def pub_kancloud(args):
 
     doc_dir = path.join(tempfile.gettempdir, uuid.uuid4().hex)
     shutil.copytree(args.dir, doc_dir)
-    os.chdir(doc_dir)
+    # os.chdir(doc_dir)
 
     doc_id = path.basename(args.dir)
     if not kan_exists(args.un, doc_id):
@@ -39,4 +39,12 @@ def pub_kancloud(args):
     set_remote(doc_dir, 'origin', '')
     exec_cmd('git push orgin master', cwd=doc_dir)
 
-    
+    kan_toggle(args.un, doc_id, args.cookie, 'download', True)
+    r = kan_release(args.un, doc_id, args.cookie)
+    if r['code']:
+        print(f'{doc_id} 发布失败:{r["message"]}')
+        return
+    else:
+        print(f'{doc_id} 发布成功！')
+
+    shutil.rmtree(doc_dir, True)
