@@ -50,3 +50,10 @@ def pub_kancloud(args):
         print(f'{doc_id} 发布成功！')
 
     shutil.rmtree(doc_dir, True)
+
+def reg_subparser(subparsers):
+    parser = subparsers.add_parser("kancloud", help="pub kancloud")
+    parser.add_argument("dir", help="doc dir")
+    parser.add_argument("-u", "--un", default='wizardforcel', help="kancloud un")
+    parser.add_argument("-c", "--cookie", default=os.environ.get('KAN_COOKIE', ''), help="kancloud cookie")
+    parser.set_defaults(func=pub_kancloud)

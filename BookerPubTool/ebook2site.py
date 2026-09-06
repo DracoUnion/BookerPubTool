@@ -62,4 +62,12 @@ def ebook2site_handle(args):
         if suff: name += '-' + suff
     proj_dir = path.join(dir, name)
     ebook2site(fname, proj_dir)
+
+def reg_subparser(subparsers):
+    parser = subparsers.add_parser("ebook2site", help="convert an ebook to a site")
+    parser.add_argument("file", help="file")
+    parser.add_argument("-n", "--name", help="name")
+    parser.add_argument("-d", "--dir", help="dir", default='.')
+    parser.add_argument("-s", "--suffix", help="suffix", default='')
+    parser.set_defaults(func=ebook2site_handle)
     

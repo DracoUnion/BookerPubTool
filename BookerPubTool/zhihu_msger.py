@@ -4,6 +4,7 @@ import re
 import time
 import sys
 import random
+import os
 import traceback
 
 default_hdrs = {
@@ -187,5 +188,25 @@ def crawl_uids_handle(args):
             f.write('\n'.join(uids) + '\n')
     f.close()
     print('done...')
+
+def reg_subparser(subparsers):
+    parser = subparsers.add_parser("zhihu-msg", help="send zhihu messages")
+    parser.add_argument("uid_fname", help="file name including uids")
+    parser.add_argument(
+        "-m", "--content",
+        default='布客社区\n\n您永远在线的两性情感和技术变现专家\n\n🔗https://docs.apachecn.org',
+        help="message content",
+    )
+    parser.add_argument("-c", "--cookies", default=os.environ.get('ZHIHU_COOKIES', ''), help="zhihu cookies splited with ';;'")
+    parser.add_argument("-n", "--new", action='store_true', help="whether to use new API")
+    parser.add_argument("-s", "--wait-succ", type=float, default=60, help="how long to wait after success")
+    parser.add_argument("-f", "--wait-fail", type=float, default=0, help="how long to wait after failure except HTTP403")
+    parser.add_argument("-b", "--wait-403", type=float, default=0, help="how long to wait after HTTP403")
+    parser.set_defaults(func=send_msg_handle)
+
+    parser = subparsers.add_parser("zhihu-crawl-uid", help="crawl zhihu uids from topics")
+    parser.add_argument("tid_fname", help="file name including tids")
+    parser.add_argument("-u", "--uid-fname", default='uid.txt', help="output file name including uids")
+    parser.set_defaults(func=crawl_uids_handle)
         
 

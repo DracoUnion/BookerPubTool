@@ -161,3 +161,15 @@ def publish_pypi(args):
     if need_rmdir: rmtree(dir)
     time.sleep(args.wait)
 
+def reg_subparser(subparsers):
+    parser = subparsers.add_parser("pub-pypi", help="publish book to pypi")
+    parser.add_argument("dir", help="dir")
+    parser.add_argument("-e", "--expire", help="expire date for old packages")
+    parser.add_argument("-w", "--wait", type=int, default=0, help="wait sec")
+    parser.add_argument("-p", "--proxy", help="proxy")
+    parser.set_defaults(func=publish_pypi)
+
+    parser = subparsers.add_parser("conf-pypi", help="configure pypi token")
+    parser.add_argument("token", help="token")
+    parser.set_defaults(func=config_pypi)
+

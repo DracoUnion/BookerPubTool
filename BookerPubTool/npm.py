@@ -130,3 +130,13 @@ def publish_npm(args):
     os.chdir('..')
     rmtree(pkg_dir)
     if need_rmdir: rmtree(dir)
+
+def reg_subparser(subparsers):
+    parser = subparsers.add_parser("pub-npm", help="publish book to npm")
+    parser.add_argument("dir", help="dir")
+    parser.add_argument("-e", "--expire", help="expire date for old packages")
+    parser.set_defaults(func=publish_npm)
+
+    parser = subparsers.add_parser("conf-npm", help="configure npm token")
+    parser.add_argument("token", help="token")
+    parser.set_defaults(func=config_npm)

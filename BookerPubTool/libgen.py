@@ -234,4 +234,12 @@ def upload_libgen(args):
         process_dir(args)
     else:
         process_file(args)
+
+def reg_subparser(subparsers):
+    parser = subparsers.add_parser("libgen", help="upload to libgen")
+    parser.add_argument("series", help="series")
+    parser.add_argument("fname", help="file name")
+    parser.add_argument("-t", "--threads", type=int, default=3, help="thread count")
+    parser.add_argument("-p", "--proxy", help="proxy")
+    parser.set_defaults(func=upload_libgen)
     

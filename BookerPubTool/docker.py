@@ -102,3 +102,10 @@ def publish_docker(args):
         subp.Popen(cmd, shell=True).communicate()
     if need_rmdir: rmtree(dir)
 
+def reg_subparser(subparsers):
+    parser = subparsers.add_parser("pub-docker", help="publish book to dockerhub")
+    parser.add_argument("dir", help="dir")
+    parser.add_argument("-e", "--expire", help="expire date for old packages")
+    parser.add_argument("-p", "--proxy", help="http proxy")
+    parser.set_defaults(func=publish_docker)
+
