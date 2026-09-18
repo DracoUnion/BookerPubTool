@@ -1,6 +1,6 @@
 # BookerPubTool
 
-ApacheCN 书籍一键发布工具：把电子书（PDF / EPUB / MOBI / AZW3）或文档站点发布到 **Docker Hub / PyPI / npm / Libgen / 看云（KanCloud）**，同时内置知乎私信、Git 批量提交/推送等发布相关工具。
+ApacheCN 书籍一键发布工具：把电子书（PDF / EPUB / MOBI / AZW3）或文档站点发布到 **Docker Hub / PyPI / npm / Libgen / 看云（KanCloud）**，同时内置知乎私信、Git 批量提交/推送，以及基于 content-pipeline 的多平台内容分发（**公众号 / 小红书 / 即刻 / 抖音 / 小宇宙 / 视频号**）。
 
 > GitHub: <https://github.com/apachecn/BookerPubTool>
 
@@ -13,11 +13,16 @@ pip install .          # 或
 pip install -e .       # 开发模式，改动即时生效
 ```
 
-依赖来自 `requirements.txt` / `pyproject.toml`（requests、pyquery、twine、wheel、jieba、xpinyin）。部分功能需要额外的外部命令：
+依赖来自 `requirements.txt` / `pyproject.toml`（requests、pyquery、twine、wheel、jieba、xpinyin、playwright）。部分功能需要额外的外部命令：
 
 - Docker 发布需要本机安装 `docker`
 - npm 发布需要本机安装 `node` / `npm`
 - MOBI / AZW3 转换需要 `calibre` 的 `ebook-convert`
+- 多平台发布（`gzh` / `xhs` / `jike` / `douyin` / `xiaoyuzhou`）需要 Playwright：
+  ```bash
+  pip install playwright
+  python -m playwright install chromium
+  ```
 
 ## 命令总览
 
@@ -33,7 +38,7 @@ python -m BookerPubTool <cmd> [args]
 ```text
 { pub-docker, pub-pypi, conf-pypi, pub-npm, conf-npm, ebook2site,
   libgen, zhihu-msg, zhihu-crawl-uid, git-init, git-commit, git-push,
-  kancloud }
+  kancloud, gzh, xhs, jike, douyin, xiaoyuzhou, shipinhao }
 ```
 
 每个命令都可以用 `-h` / `--help` 查看详细参数。全局参数：
@@ -187,6 +192,49 @@ bpt libgen lightnovel ~/book.epub
 
 ---
 
+## 内容分发类命令（多平台发布）
+
+把 [content-pipeline](https://github.com/DracoUnion/content-pipeline) 产出的 `manifest.json` 一键发布到各平台。
+所有命令都读取一个 `manifest.json`，并按平台取对应 `outputs` 字段：
+
+| 命令 | 平台 | 使用浏览器 | `outputs` 字段 |
+| --- | --- | --- | --- |
+| `gzh` | 公众号（微信 API 推草稿） | 否 | `wechat` |
+| `xhs` | 小红书 | 是 | `xiaohongshu` |
+| `jike` | 即刻 | 是 | `jike` |
+| `douyin` | 抖音 | 是 | `douyin` |
+| `xiaoyuzhou` | 小宇宙 | 是 | `xiaoyuzhou` |
+| `shipinhao` | 视频号 | 否（仅手动指引） | `video` |
+
+通用参数：
+
+| 参数 | 说明 | 默认 |
+| --- | --- | --- |
+| `manifest` | manifest.json 路径（必填） | — |
+| `-p, --preview` | 只预填内容、不点发布，留浏览器给人工审阅 | 关闭（直接发布） |
+| `-H, --headless` | 无头模式运行 Chromium | 关闭（可见浏览器） |
+
+示例：
+
+```bash
+bpt gzh  ./manifest.json          # 公众号：API 推草稿
+bpt xhs  ./manifest.json --preview  # 小红书：预填不发布
+bpt jike ./manifest.json
+bpt douyin ./manifest.json
+bpt xiaoyuzhou ./manifest.json
+bpt shipinhao ./manifest.json     # 视频号：打印手动上传指引
+```
+
+> **注意**：
+> - `gzh` 走微信公众平台 API 直推草稿，需配置 `WECHAT_APPID` / `WECHAT_APPSECRET`（见下方环境变量），
+>   或写入 `~/.config/wechat-api/config.json`（`{"appId": "...", "appSecret": "..."}`）。未配置或 API
+>   失败时自动降级为手动模式，并打印 HTML/Markdown 文件路径。
+> - 浏览器抓取类命令（`xhs`/`jike`/`douyin`/`xiaoyuzhou`）使用 Playwright 弹出的可见浏览器，需在页面里
+>   手动登录对应创作者后台（登录状态不跨运行保存）。页面 UI 升级时选择器可能失效，需相应调整脚本。
+> - `douyin`（抖音）反自动化较激进，属实验性功能。
+
+---
+
 ## 知乎类命令
 
 ### `zhihu-msg` — 批量发送知乎私信
@@ -318,6 +366,8 @@ bpt kancloud ./docs -u myname
 | --- | --- | --- |
 | `ZHIHU_COOKIES` | 知乎 cookie，多个用 `;;` 分隔 | `zhihu-msg` 的 `--cookies` 默认值 |
 | `KAN_COOKIE` | 看云 cookie | `kancloud` 的 `--cookie` 默认值 |
+| `WECHAT_APPID` | 公众号 appId（API 推草稿） | `gzh` |
+| `WECHAT_APPSECRET` | 公众号 appSecret（API 推草稿） | `gzh` |
 
 ---
 

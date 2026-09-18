@@ -12,6 +12,7 @@ import re
 import stat
 import jieba
 import xpinyin
+from contextlib import contextmanager
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
@@ -152,6 +153,48 @@ def create_driver(headless=True):
         "source": stealth
     })
     return driver
+
+def plrt_new_context(browser):
+    context =  browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            viewport={"width":1920,"height":1080},
+            locale="zh-CN",
+            timezone_id="Asia/Shanghai"
+        )
+    context.add_init_script(d('patch_env_mock_wasm.js'))
+    context.add_init_script(d('stealth.min.js'))
+    return context
+
+def plrt_new_browser(plrt, headless=True):
+    return plrt.chromium.launch(
+        headless=headless,
+        args=[
+            # 禁用AutomationControlled自动化标记（Chrome94+核心参数）
+            "--disable-blink-features=AutomationControlled",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-blink-features=AutomationControlled",
+            # 模拟真人最大化打开浏览器
+            "--start-maximized",
+        ],
+    )
+
+@contextmanager
+def plrt_create_driver(headless=True, timeout=30_000):
+    """Yield a native Playwright page and its context."""
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser = plrt_new_browser(p, headless)
+        context = plrt_new_context(browser)
+        page = context.new_page()
+        page.set_default_timeout(timeout)
+        page.set_default_navigation_timeout(timeout)
+        try:
+            yield browser, context, page
+        finally:
+            page.close()
+            context.close()
+            browser.close()
 
 RE_TITLE = r'^#+\x20+(.+?)$'
     

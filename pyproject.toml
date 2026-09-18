@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "BookerPubTool"
-version = "2026.3.25.0"
+version = "2026.9.19.0"
 description = "PYPI book publisher for ApacheCN"
 readme = "README.md"
 license = {text = "SATA"}
@@ -39,6 +39,7 @@ dependencies = [
     "wheel",
     "jieba",
     "xpinyin",
+    "playwright",
 ]
 
 [project.urls]
