@@ -69,7 +69,7 @@ bpt pub-docker ./docs
 ### 内容分发（命令行参数直传，一键发布）
 
 ```bash
-bpt gzh --html ./out/文章_preview.html --title "标题" --author "01fish" --digest "摘要" --cover ./out/封面.png
+bpt gzh --input ./out/文章.md --title "标题" --author "01fish" --digest "摘要" --cover ./out/封面.png
 bpt xhs --input ./out/文章-小红书文案.txt --images-dir ./out/images --preview
 bpt jike --input ./out/文章-即刻文案.txt
 bpt douyin --video ./out/video.mp4 --title "标题" --description "描述" --tag "#标签"
@@ -224,27 +224,34 @@ bpt libgen lightnovel ~/book.epub
 ### `gzh` — 发布到公众号
 
 ```text
-usage: bpt gzh [-h] [--html HTML] [--markdown MD] [--title TITLE] [--author AUTHOR]
-                [--digest DIGEST] [--cover COVER] [--image IMAGE] [-p] [-H]
+usage: bpt gzh [-h] [--input INPUT] [--title TITLE] [--author AUTHOR]
+                [--digest DIGEST] [--cover COVER] [--image IMAGE]
+                [--theme THEME] [--font-size FONT_SIZE] [-o OUTPUT] [--inline] [-p] [-H]
 ```
 
 | 参数 | 说明 |
 | --- | --- |
-| `--html` | 排版后的 `_preview.html` 文件路径（API 发布必填） |
-| `--markdown` | 文章 Markdown 文件路径（仅手动兜底时使用） |
+| `--input` | 输入文件路径：`.md` 会自动调用 `wx-html` 排版为 HTML；`.html` 直接使用 |
 | `--title` | 文章标题 |
 | `--author` | 作者 |
 | `--digest` | 文章摘要（120字以内） |
 | `--cover` | 封面图文件路径 |
 | `--image` | 文章配图文件路径（可重复指定） |
+| `--theme` | Markdown 排版配色主题（`01fish` / `chinese` / `apple`，默认 `01fish`） |
+| `--font-size` | Markdown 排版正文字号（`small` / `medium` / `large`，默认 `medium`） |
+| `-o, --output` | Markdown 排版后的 HTML 输出路径（默认 `[input]_preview.html`） |
+| `--inline` | 将 CSS 内联到元素 style（用于微信 API 推送，需 `premailer`） |
+
+> `--input` 为 `.md` 时，内部调用 `BookerMarkdownTool` 的 `wx-html` 命令
+> （已 vendored 到 `BookerPubTool/wx_html.py`）把 Markdown 转成微信公众号 HTML 再推送。
 
 走微信公众平台 API 直推草稿，需配置 `WECHAT_APPID` / `WECHAT_APPSECRET`（见下方环境变量），
 或写入 `~/.config/wechat-api/config.json`（`{"appId": "...", "appSecret": "..."}`）。未配置或 API
-失败时自动降级为手动模式，并打印 HTML/Markdown 文件路径。
+失败时自动降级为手动模式，并打印 HTML 文件路径。
 
 ```bash
-bpt gzh --html ./out/文章_preview.html --title "标题" --author "01fish" --digest "摘要" --cover ./out/封面.png
-bpt gzh --html ./out/文章_preview.html --image ./out/配图1.png --image ./out/配图2.png --preview
+bpt gzh --input ./out/文章.md --title "标题" --author "01fish" --digest "摘要" --cover ./out/封面.png
+bpt gzh --input ./out/文章_preview.html --image ./out/配图1.png --image ./out/配图2.png --preview
 ```
 
 ### `xhs` — 发布到小红书

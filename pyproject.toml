@@ -40,6 +40,9 @@ dependencies = [
     "jieba",
     "xpinyin",
     "playwright",
+    "markdown",
+    "pygments",
+    "premailer",
 ]
 
 [project.urls]

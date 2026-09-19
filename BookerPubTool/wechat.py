@@ -357,9 +357,40 @@ def publish_via_api(wechat_data):
 
 
 def publish_gzh(args):
+    input_path = args.input
+    if not input_path:
+        status_print('manual', 'No input file provided. Pass --input <article.md|_preview.html>.')
+        return
+    if not path.exists(input_path):
+        status_print('manual', f'Input file not found: {input_path}.')
+        return
+
+    ext = path.splitext(input_path)[1].lower()
+    html_path = None
+    if ext == '.html':
+        html_path = input_path
+    elif ext in ('.md', '.markdown'):
+        try:
+            from .wx_html import render_markdown_file
+            html_path = render_markdown_file(
+                input_path,
+                theme=args.theme,
+                font_size=args.font_size,
+                output=args.output,
+                inline=args.inline,
+            )
+            print(f'{timestr()}  [gzh] Markdown 已排版为 HTML: {html_path}')
+        except Exception as e:
+            print(f'{timestr()}  [gzh] Markdown 排版失败: {e}')
+            status_print('manual', f'Markdown 排版失败: {e}')
+            return
+    else:
+        status_print('manual', f'Unsupported input type: {ext}. Pass a .md or .html file.')
+        return
+
     wechat_data = {
-        'html': args.html,
-        'markdown': args.markdown,
+        'html': html_path,
+        'markdown': input_path if ext in ('.md', '.markdown') else None,
         'title': args.title,
         'author': args.author,
         'digest': args.digest,
@@ -368,11 +399,9 @@ def publish_gzh(args):
     }
 
     has_html = wechat_data['html'] and path.exists(wechat_data['html'])
-    has_markdown = wechat_data['markdown'] and path.exists(wechat_data['markdown'])
-    if not has_html and not has_markdown:
+    if not has_html:
         status_print('manual',
-                     'No HTML or Markdown file provided. Pass --html (rendered _preview.html) '
-                     'or --markdown.')
+                     'No HTML file available. Pass --input <_preview.html> or a .md file.')
         return
 
     # L0: primary draft via API (skipped in preview mode)
@@ -393,13 +422,21 @@ def publish_gzh(args):
 
 def reg_subparser(subparsers):
     parser = subparsers.add_parser("gzh", help="发布文章到微信公众号")
-    parser.add_argument("--html", help="排版后的 _preview.html 文件路径（API 发布必填）")
-    parser.add_argument("--markdown", help="文章 Markdown 文件路径（仅手动兜底时使用）")
+    parser.add_argument("--input", help="输入文件路径：.md 会自动排版为 HTML，.html 直接使用")
     parser.add_argument("--title", help="文章标题")
     parser.add_argument("--author", help="作者")
     parser.add_argument("--digest", help="文章摘要（120字以内）")
     parser.add_argument("--cover", help="封面图文件路径")
     parser.add_argument("--image", action="append", help="文章配图文件路径（可重复指定）")
+    parser.add_argument("--theme", default='01fish',
+                        choices=['01fish', 'chinese', 'apple'],
+                        help="Markdown 排版配色主题（默认 01fish）")
+    parser.add_argument("--font-size", default='medium',
+                        choices=['small', 'medium', 'large'],
+                        help="Markdown 排版正文字号（默认 medium）")
+    parser.add_argument("-o", "--output", help="Markdown 排版后的 HTML 输出路径")
+    parser.add_argument("--inline", action="store_true",
+                        help="将 CSS 内联到元素 style（用于微信 API 推送，需 premailer）")
     parser.add_argument("-p", "--preview", action="store_true",
                         help="只预填内容、不点发布，留浏览器给人工审阅")
     parser.add_argument("-H", "--headless", action="store_true",

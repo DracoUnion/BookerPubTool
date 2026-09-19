@@ -5,3 +5,6 @@ wheel
 jieba
 xpinyin
 playwright
+markdown
+pygments
+premailer
