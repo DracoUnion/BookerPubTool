@@ -66,6 +66,21 @@ bpt pub-docker ./docs
 
 > **注意**：`pub-*` 命令的 `dir` 既可以是一个文档目录，也可以直接传一个 PDF / EPUB / MOBI / AZW3 文件——此时会先用 `ebook2site` 自动转成站点再发布。
 
+### 内容分发（产出 → manifest → 一键发布）
+
+```bash
+# 1. 把内容管线的产物汇总成 manifest.json
+bpt manifest "文章标题" --source "https://mp.weixin.qq.com/s/xxx" -o ./out/
+
+# 2. 按平台发布（可加 --preview 只预填不发布）
+bpt gzh  ./out/manifest.json
+bpt xhs  ./out/manifest.json --preview
+bpt jike ./out/manifest.json
+bpt douyin ./out/manifest.json
+bpt xiaoyuzhou ./out/manifest.json
+bpt shipinhao ./out/manifest.json
+```
+
 ---
 
 ## 发布类命令
@@ -253,15 +268,14 @@ bpt manifest "文章标题" -o ./out/
 bpt manifest "文章标题" --source "https://mp.weixin.qq.com/s/xxx" -o ./out/
 ```
 
----
-
-## 知乎类命令
+> **注意**：
 > - `gzh` 走微信公众平台 API 直推草稿，需配置 `WECHAT_APPID` / `WECHAT_APPSECRET`（见下方环境变量），
 >   或写入 `~/.config/wechat-api/config.json`（`{"appId": "...", "appSecret": "..."}`）。未配置或 API
 >   失败时自动降级为手动模式，并打印 HTML/Markdown 文件路径。
 > - 浏览器抓取类命令（`xhs`/`jike`/`douyin`/`xiaoyuzhou`）使用 Playwright 弹出的可见浏览器，需在页面里
 >   手动登录对应创作者后台（登录状态不跨运行保存）。页面 UI 升级时选择器可能失效，需相应调整脚本。
 > - `douyin`（抖音）反自动化较激进，属实验性功能。
+> - 完整闭环：`bpt manifest "标题" -o ./out/` → `bpt gzh/xhs/jike/douyin/xiaoyuzhou/shipinhao ./out/manifest.json`。
 
 ---
 
