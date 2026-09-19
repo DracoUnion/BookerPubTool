@@ -105,13 +105,13 @@ def publish_douyin(args):
 
 
 def reg_subparser(subparsers):
-    parser = subparsers.add_parser("douyin", help="publish to Douyin (抖音)")
+    parser = subparsers.add_parser("douyin", help="发布到抖音")
     parser.add_argument("--video", help="视频文件路径")
     parser.add_argument("--title", help="视频标题")
     parser.add_argument("--description", help="视频描述")
-    parser.add_argument("--tag", action="append", help="话题标签（可重复）")
+    parser.add_argument("--tag", action="append", help="话题标签（可重复指定）")
     parser.add_argument("-p", "--preview", action="store_true",
-                        help="只预填不发布，留浏览器给人工审阅")
+                        help="只预填内容、不点发布，留浏览器给人工审阅")
     parser.add_argument("-H", "--headless", action="store_true",
-                        help="无头模式运行 Chromium")
+                        help="以无头模式运行 Chromium（默认可见浏览器）")
     parser.set_defaults(func=publish_douyin)

@@ -80,11 +80,11 @@ def publish_jike(args):
 
 
 def reg_subparser(subparsers):
-    parser = subparsers.add_parser("jike", help="publish to Jike (即刻)")
+    parser = subparsers.add_parser("jike", help="发布到即刻")
     parser.add_argument("--body", help="即刻正文")
-    parser.add_argument("--circle", action="append", help="圈子（可重复）")
+    parser.add_argument("--circle", action="append", help="圈子（可重复指定）")
     parser.add_argument("-p", "--preview", action="store_true",
-                        help="只预填不发布，留浏览器给人工审阅")
+                        help="只预填内容、不点发布，留浏览器给人工审阅")
     parser.add_argument("-H", "--headless", action="store_true",
-                        help="无头模式运行 Chromium")
+                        help="以无头模式运行 Chromium（默认可见浏览器）")
     parser.set_defaults(func=publish_jike)

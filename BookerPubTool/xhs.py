@@ -119,13 +119,13 @@ def publish_xhs(args):
 
 
 def reg_subparser(subparsers):
-    parser = subparsers.add_parser("xhs", help="publish to Xiaohongshu (小红书)")
+    parser = subparsers.add_parser("xhs", help="发布到小红书")
     parser.add_argument("--title", help="小红书标题")
     parser.add_argument("--body", help="正文内容")
-    parser.add_argument("--images-dir", help="图片目录")
-    parser.add_argument("--tag", action="append", help="话题标签（可重复）")
+    parser.add_argument("--images-dir", help="图片目录（上传其中的 png/jpg/webp）")
+    parser.add_argument("--tag", action="append", help="话题标签（可重复指定）")
     parser.add_argument("-p", "--preview", action="store_true",
-                        help="只预填不发布，留浏览器给人工审阅")
+                        help="只预填内容、不点发布，留浏览器给人工审阅")
     parser.add_argument("-H", "--headless", action="store_true",
-                        help="无头模式运行 Chromium")
+                        help="以无头模式运行 Chromium（默认可见浏览器）")
     parser.set_defaults(func=publish_xhs)

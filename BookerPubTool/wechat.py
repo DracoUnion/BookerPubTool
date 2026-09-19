@@ -392,16 +392,16 @@ def publish_gzh(args):
 
 
 def reg_subparser(subparsers):
-    parser = subparsers.add_parser("gzh", help="publish article to WeChat Official Account (公众号)")
-    parser.add_argument("--html", help="排版后的 _preview.html 路径")
-    parser.add_argument("--markdown", help="文章 Markdown 路径")
+    parser = subparsers.add_parser("gzh", help="发布文章到微信公众号")
+    parser.add_argument("--html", help="排版后的 _preview.html 文件路径（API 发布必填）")
+    parser.add_argument("--markdown", help="文章 Markdown 文件路径（仅手动兜底时使用）")
     parser.add_argument("--title", help="文章标题")
     parser.add_argument("--author", help="作者")
-    parser.add_argument("--digest", help="文章摘要（120字内）")
-    parser.add_argument("--cover", help="封面图路径")
-    parser.add_argument("--image", action="append", help="文章配图路径（可重复）")
+    parser.add_argument("--digest", help="文章摘要（120字以内）")
+    parser.add_argument("--cover", help="封面图文件路径")
+    parser.add_argument("--image", action="append", help="文章配图文件路径（可重复指定）")
     parser.add_argument("-p", "--preview", action="store_true",
-                        help="只预填不发布，留浏览器给人工审阅")
+                        help="只预填内容、不点发布，留浏览器给人工审阅")
     parser.add_argument("-H", "--headless", action="store_true",
-                        help="无头模式运行 Chromium")
+                        help="以无头模式运行 Chromium（默认可见浏览器）")
     parser.set_defaults(func=publish_gzh)

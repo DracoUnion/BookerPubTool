@@ -18,7 +18,7 @@ pip install -e .       # 开发模式，改动即时生效
 - Docker 发布需要本机安装 `docker`
 - npm 发布需要本机安装 `node` / `npm`
 - MOBI / AZW3 转换需要 `calibre` 的 `ebook-convert`
-- 多平台发布（`gzh` / `xhs` / `jike` / `douyin` / `xiaoyuzhou`）需要 Playwright：
+- 多平台发布（`gzh` / `xhs` / `jike` / `douyin` / `xiaoyuzhou` / `shipinhao`）需要安装 Playwright：
   ```bash
   pip install playwright
   python -m playwright install chromium
@@ -230,13 +230,13 @@ usage: bpt gzh [-h] [--html HTML] [--markdown MD] [--title TITLE] [--author AUTH
 
 | 参数 | 说明 |
 | --- | --- |
-| `--html` | 排版后的 `_preview.html` 路径（API 发布必填） |
-| `--markdown` | 文章 Markdown 路径（仅手动兜底时用） |
+| `--html` | 排版后的 `_preview.html` 文件路径（API 发布必填） |
+| `--markdown` | 文章 Markdown 文件路径（仅手动兜底时使用） |
 | `--title` | 文章标题 |
 | `--author` | 作者 |
-| `--digest` | 文章摘要（120字内） |
-| `--cover` | 封面图路径 |
-| `--image` | 文章配图路径（可重复） |
+| `--digest` | 文章摘要（120字以内） |
+| `--cover` | 封面图文件路径 |
+| `--image` | 文章配图文件路径（可重复指定） |
 
 走微信公众平台 API 直推草稿，需配置 `WECHAT_APPID` / `WECHAT_APPSECRET`（见下方环境变量），
 或写入 `~/.config/wechat-api/config.json`（`{"appId": "...", "appSecret": "..."}`）。未配置或 API
@@ -257,8 +257,8 @@ usage: bpt xhs [-h] [--title TITLE] [--body BODY] [--images-dir IMAGES_DIR] [--t
 | --- | --- |
 | `--title` | 小红书标题 |
 | `--body` | 正文内容 |
-| `--images-dir` | 图片目录（上传其中的 png/jpg/webp） |
-| `--tag` | 话题标签（可重复） |
+| `--images-dir` | 图片目录（上传其中的 png/jpg/webp 文件） |
+| `--tag` | 话题标签（可重复指定） |
 
 ```bash
 bpt xhs --title "小红书标题" --body "正文内容" --images-dir ./out/images --tag "#AI工具" --tag "#ClaudeCode"
@@ -274,7 +274,7 @@ usage: bpt jike [-h] [--body BODY] [--circle CIRCLE] [-p] [-H]
 | 参数 | 说明 |
 | --- | --- |
 | `--body` | 即刻正文 |
-| `--circle` | 圈子（可重复） |
+| `--circle` | 圈子（可重复指定） |
 
 ```bash
 bpt jike --body "即刻正文" --circle "#ClaudeCode" --circle "#AI工具"
@@ -291,7 +291,7 @@ usage: bpt douyin [-h] [--video VIDEO] [--title TITLE] [--description DESCRIPTIO
 | `--video` | 视频文件路径 |
 | `--title` | 视频标题 |
 | `--description` | 视频描述 |
-| `--tag` | 话题标签（可重复） |
+| `--tag` | 话题标签（可重复指定） |
 
 > 抖音反自动化较激进，属实验性功能。
 
@@ -310,7 +310,7 @@ usage: bpt xiaoyuzhou [-h] [--audio AUDIO] [--title TITLE] [--description DESCRI
 | `--audio` | 音频文件路径 |
 | `--title` | 播客标题 |
 | `--description` | 播客简介 |
-| `--show-notes` | 完整 show notes |
+| `--show-notes` | 完整 show notes 文案 |
 
 ```bash
 bpt xiaoyuzhou --audio ./out/podcast.mp3 --title "EP01丨标题" --description "简介" --show-notes "文稿"
@@ -324,9 +324,9 @@ usage: bpt shipinhao [-h] [--intro INTRO] [--outro OUTRO] [--prompts PROMPTS]
 
 | 参数 | 说明 |
 | --- | --- |
-| `--intro` | 片头视频路径 |
-| `--outro` | 片尾视频路径 |
-| `--prompts` | 提词器文案路径 |
+| `--intro` | 片头视频文件路径 |
+| `--outro` | 片尾视频文件路径 |
+| `--prompts` | 提词器文案文件路径 |
 
 ```bash
 bpt shipinhao --intro ./out/intro.mp4 --outro ./out/outro.mp4 --prompts ./out/prompts.md

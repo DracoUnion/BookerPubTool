@@ -106,13 +106,13 @@ def publish_xiaoyuzhou(args):
 
 
 def reg_subparser(subparsers):
-    parser = subparsers.add_parser("xiaoyuzhou", help="publish to Xiaoyuzhou (小宇宙)")
+    parser = subparsers.add_parser("xiaoyuzhou", help="发布到小宇宙")
     parser.add_argument("--audio", help="音频文件路径")
     parser.add_argument("--title", help="播客标题")
     parser.add_argument("--description", help="播客简介")
-    parser.add_argument("--show-notes", help="完整 show notes")
+    parser.add_argument("--show-notes", help="完整 show notes 文案")
     parser.add_argument("-p", "--preview", action="store_true",
-                        help="只预填不发布，留浏览器给人工审阅")
+                        help="只预填内容、不点发布，留浏览器给人工审阅")
     parser.add_argument("-H", "--headless", action="store_true",
-                        help="无头模式运行 Chromium")
+                        help="以无头模式运行 Chromium（默认可见浏览器）")
     parser.set_defaults(func=publish_xiaoyuzhou)

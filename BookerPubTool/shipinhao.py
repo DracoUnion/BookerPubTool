@@ -35,8 +35,8 @@ def publish_shipinhao(args):
 
 
 def reg_subparser(subparsers):
-    parser = subparsers.add_parser("shipinhao", help="视频号: manual upload guide")
-    parser.add_argument("--intro", help="片头视频路径")
-    parser.add_argument("--outro", help="片尾视频路径")
-    parser.add_argument("--prompts", help="提词器文案路径")
+    parser = subparsers.add_parser("shipinhao", help="视频号：打印手动上传指引")
+    parser.add_argument("--intro", help="片头视频文件路径")
+    parser.add_argument("--outro", help="片尾视频文件路径")
+    parser.add_argument("--prompts", help="提词器文案文件路径")
     parser.set_defaults(func=publish_shipinhao)
