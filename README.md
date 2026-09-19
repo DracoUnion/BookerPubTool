@@ -38,7 +38,7 @@ python -m BookerPubTool <cmd> [args]
 ```text
 { pub-docker, pub-pypi, conf-pypi, pub-npm, conf-npm, ebook2site,
   libgen, zhihu-msg, zhihu-crawl-uid, git-init, git-commit, git-push,
-  kancloud, gzh, xhs, jike, douyin, xiaoyuzhou, shipinhao }
+  kancloud, gzh, xhs, jike, douyin, xiaoyuzhou, shipinhao, manifest }
 ```
 
 每个命令都可以用 `-h` / `--help` 查看详细参数。全局参数：
@@ -225,7 +225,37 @@ bpt xiaoyuzhou ./manifest.json
 bpt shipinhao ./manifest.json     # 视频号：打印手动上传指引
 ```
 
-> **注意**：
+### `manifest` — 汇总产出物 → manifest.json
+
+把内容管线产出的文件按约定文件名自动发现，汇总成 `manifest.json`，供后续分发命令使用。
+
+```text
+usage: bpt manifest [-h] [--source SOURCE] [-o OUTPUT] title
+```
+
+| 参数 | 说明 | 默认 |
+| --- | --- | --- |
+| `title` | 文章标题（必填） | — |
+| `--source` | 来源（如微信链接） | 空 |
+| `-o, --output` | 输出目录 | `output/`（或 `CONTENT_PIPELINE_OUTPUT` 环境变量） |
+
+按文件名自动发现的产物：
+
+| 文件名 | 对应 `outputs` 键 |
+| --- | --- |
+| `*小红书版.html` | `xiaohongshu` |
+| `*即刻文案.txt` | `jike` |
+| `*播客脚本.md` + `*.mp3` | `xiaoyuzhou` |
+| `*.md`（非播客脚本）+ `*_preview.html` + `*封面.html` | `wechat` |
+
+```bash
+bpt manifest "文章标题" -o ./out/
+bpt manifest "文章标题" --source "https://mp.weixin.qq.com/s/xxx" -o ./out/
+```
+
+---
+
+## 知乎类命令
 > - `gzh` 走微信公众平台 API 直推草稿，需配置 `WECHAT_APPID` / `WECHAT_APPSECRET`（见下方环境变量），
 >   或写入 `~/.config/wechat-api/config.json`（`{"appId": "...", "appSecret": "..."}`）。未配置或 API
 >   失败时自动降级为手动模式，并打印 HTML/Markdown 文件路径。

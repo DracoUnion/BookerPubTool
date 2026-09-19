@@ -8,8 +8,25 @@ scripts/distribute/distribute.ts + cdp-utils.ts.
 
 import json
 import os
+import glob
 from os import path
+from datetime import datetime
 from .util import timestr, read_file
+
+
+MANIFEST_SCHEMA_VERSION = "1.0"
+
+# 平台键 → 中文名（与 content-pipeline SKILL.md / manifest.py 一致）
+PLATFORM_ORDER = ['wechat', 'xhs', 'jike', 'xiaoyuzhou', 'douyin', 'shipinhao']
+
+PLATFORM_NAMES = {
+    'wechat': '公众号',
+    'xhs': '小红书',
+    'jike': '即刻',
+    'xiaoyuzhou': '小宇宙',
+    'douyin': '抖音',
+    'shipinhao': '视频号',
+}
 
 
 def load_manifest(manifest_path):
@@ -30,6 +47,45 @@ def get_outputs(manifest):
 
 def file_exists(p):
     return bool(p) and path.exists(p)
+
+
+def build_manifest(title, source='', outputs=None, *, author=''):
+    """Build a manifest dict (port of content-pipeline manifest.build_manifest)."""
+    return {
+        'version': MANIFEST_SCHEMA_VERSION,
+        'created': datetime.now().isoformat(timespec='seconds'),
+        'source': source,
+        'title': title,
+        'author': author,
+        'outputs': outputs or {},
+    }
+
+
+def write_manifest(manifest, out_dir):
+    """Write manifest to out_dir/manifest.json, return the path."""
+    os.makedirs(out_dir, exist_ok=True)
+    p = path.join(out_dir, 'manifest.json')
+    with open(p, 'w', encoding='utf-8') as f:
+        json.dump(manifest, f, ensure_ascii=False, indent=2)
+    return p
+
+
+def resolve_out_dir(given=None):
+    """Resolve output dir: CLI > CONTENT_PIPELINE_OUTPUT env > 'output'."""
+    d = given or os.environ.get('CONTENT_PIPELINE_OUTPUT', 'output').strip() or 'output'
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def infer_outputs(manifest):
+    """Return list of non-empty outputs keys, in PLATFORM_ORDER."""
+    outputs = get_outputs(manifest)
+    keys = []
+    for k in PLATFORM_ORDER:
+        v = outputs.get(k)
+        if isinstance(v, dict) and v:
+            keys.append(k)
+    return keys
 
 
 def status_print(status, message, url=None):
