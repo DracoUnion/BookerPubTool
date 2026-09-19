@@ -6,27 +6,27 @@ Python port of content-pipeline's platforms/shipinhao.ts.
 视频号 has no web creator backend; we only print a manual upload guide.
 """
 
-import os
 from os import path
 from .util import timestr
-from .distribute import load_manifest, get_outputs, status_print
+from .distribute import status_print
 
 
 def publish_shipinhao(args):
-    manifest = load_manifest(args.manifest)
-    outputs = get_outputs(manifest)
-    video_data = outputs.get('video') or outputs.get('shipinhao')
-    if not video_data:
-        status_print('skipped', 'No video content in manifest')
+    intro = args.intro
+    outro = args.outro
+    prompts = args.prompts
+
+    if not intro and not outro and not prompts:
+        status_print('skipped', 'No video content provided. Pass --intro/--outro/--prompts.')
         return
 
     lines = []
-    if video_data.get('intro'):
-        lines.append(f'Intro: {video_data["intro"]}')
-    if video_data.get('outro'):
-        lines.append(f'Outro: {video_data["outro"]}')
-    if video_data.get('prompts'):
-        lines.append(f'Prompts: {video_data["prompts"]}')
+    if intro:
+        lines.append(f'Intro: {intro}')
+    if outro:
+        lines.append(f'Outro: {outro}')
+    if prompts:
+        lines.append(f'Prompts: {prompts}')
 
     status_print(
         'manual',
@@ -35,7 +35,8 @@ def publish_shipinhao(args):
 
 
 def reg_subparser(subparsers):
-    parser = subparsers.add_parser("shipinhao", help="video号: manual upload guide (视频号)")
-    from .distribute import add_common_args
-    add_common_args(parser)
+    parser = subparsers.add_parser("shipinhao", help="视频号: manual upload guide")
+    parser.add_argument("--intro", help="片头视频路径")
+    parser.add_argument("--outro", help="片尾视频路径")
+    parser.add_argument("--prompts", help="提词器文案路径")
     parser.set_defaults(func=publish_shipinhao)

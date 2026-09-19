@@ -15,7 +15,6 @@ from . import jike
 from . import douyin
 from . import xiaoyuzhou
 from . import shipinhao
-from . import manifest
 
 def main():
     parser = argparse.ArgumentParser(prog="BookerPubTool", formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -37,7 +36,6 @@ def main():
     douyin.reg_subparser(subparsers)
     xiaoyuzhou.reg_subparser(subparsers)
     shipinhao.reg_subparser(subparsers)
-    manifest.reg_subparser(subparsers)
 
     args = parser.parse_args()
     args.func(args)

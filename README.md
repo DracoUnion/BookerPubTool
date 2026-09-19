@@ -38,7 +38,7 @@ python -m BookerPubTool <cmd> [args]
 ```text
 { pub-docker, pub-pypi, conf-pypi, pub-npm, conf-npm, ebook2site,
   libgen, zhihu-msg, zhihu-crawl-uid, git-init, git-commit, git-push,
-  kancloud, gzh, xhs, jike, douyin, xiaoyuzhou, shipinhao, manifest }
+  kancloud, gzh, xhs, jike, douyin, xiaoyuzhou, shipinhao }
 ```
 
 每个命令都可以用 `-h` / `--help` 查看详细参数。全局参数：
@@ -66,20 +66,18 @@ bpt pub-docker ./docs
 
 > **注意**：`pub-*` 命令的 `dir` 既可以是一个文档目录，也可以直接传一个 PDF / EPUB / MOBI / AZW3 文件——此时会先用 `ebook2site` 自动转成站点再发布。
 
-### 内容分发（产出 → manifest → 一键发布）
+### 内容分发（命令行参数直传，一键发布）
 
 ```bash
-# 1. 把内容管线的产物汇总成 manifest.json
-bpt manifest "文章标题" --source "https://mp.weixin.qq.com/s/xxx" -o ./out/
-
-# 2. 按平台发布（可加 --preview 只预填不发布）
-bpt gzh  ./out/manifest.json
-bpt xhs  ./out/manifest.json --preview
-bpt jike ./out/manifest.json
-bpt douyin ./out/manifest.json
-bpt xiaoyuzhou ./out/manifest.json
-bpt shipinhao ./out/manifest.json
+bpt gzh --html ./out/文章_preview.html --title "标题" --author "01fish" --digest "摘要" --cover ./out/封面.png
+bpt xhs --title "小红书标题" --body "正文" --images-dir ./out/images --tag "#AI工具" --tag "#ClaudeCode" --preview
+bpt jike --body "即刻正文" --circle "#ClaudeCode" --circle "#AI工具"
+bpt douyin --video ./out/video.mp4 --title "标题" --description "描述" --tag "#标签"
+bpt xiaoyuzhou --audio ./out/podcast.mp3 --title "EP01丨标题" --description "简介" --show-notes "文稿"
+bpt shipinhao --intro ./out/intro.mp4 --outro ./out/outro.mp4 --prompts ./out/prompts.md
 ```
+
+> 各命令的完整参数表见下方「内容分发类命令」一节。
 
 ---
 
@@ -209,146 +207,133 @@ bpt libgen lightnovel ~/book.epub
 
 ## 内容分发类命令（多平台发布）
 
-把 [content-pipeline](https://github.com/DracoUnion/content-pipeline) 产出的 `manifest.json` 一键发布到各平台。
-所有命令都读取一个 `manifest.json`，并按平台取对应 `outputs` 字段：
+把内容直接通过命令行参数发布到各平台（不再读取 `manifest.json`）。
 
-| 命令 | 平台 | 使用浏览器 | `outputs` 字段 |
-| --- | --- | --- | --- |
-| `gzh` | 公众号（微信 API 推草稿） | 否 | `wechat` |
-| `xhs` | 小红书 | 是 | `xiaohongshu` |
-| `jike` | 即刻 | 是 | `jike` |
-| `douyin` | 抖音 | 是 | `douyin` |
-| `xiaoyuzhou` | 小宇宙 | 是 | `xiaoyuzhou` |
-| `shipinhao` | 视频号 | 否（仅手动指引） | `video` |
-
-通用参数：
-
-| 参数 | 说明 | 默认 |
+| 命令 | 平台 | 使用浏览器 |
 | --- | --- | --- |
-| `manifest` | manifest.json 路径（必填） | — |
-| `-p, --preview` | 只预填内容、不点发布，留浏览器给人工审阅 | 关闭（直接发布） |
-| `-H, --headless` | 无头模式运行 Chromium | 关闭（可见浏览器） |
+| `gzh` | 公众号（微信 API 推草稿） | 否 |
+| `xhs` | 小红书 | 是 |
+| `jike` | 即刻 | 是 |
+| `douyin` | 抖音 | 是 |
+| `xiaoyuzhou` | 小宇宙 | 是 |
+| `shipinhao` | 视频号 | 否（仅手动指引） |
 
-示例：
+所有命令共用 `-p/--preview`（只预填不发布，留浏览器给人工审阅）与
+`-H/--headless`（无头模式运行 Chromium，默认可见浏览器）。
 
-```bash
-bpt gzh  ./manifest.json          # 公众号：API 推草稿
-bpt xhs  ./manifest.json --preview  # 小红书：预填不发布
-bpt jike ./manifest.json
-bpt douyin ./manifest.json
-bpt xiaoyuzhou ./manifest.json
-bpt shipinhao ./manifest.json     # 视频号：打印手动上传指引
-```
-
-### `manifest` — 汇总产出物 → manifest.json
-
-把内容管线产出的文件按约定文件名自动发现，汇总成 `manifest.json`，供后续分发命令使用。
+### `gzh` — 发布到公众号
 
 ```text
-usage: bpt manifest [-h] [--source SOURCE] [-o OUTPUT] title
+usage: bpt gzh [-h] [--html HTML] [--markdown MD] [--title TITLE] [--author AUTHOR]
+                [--digest DIGEST] [--cover COVER] [--image IMAGE] [-p] [-H]
 ```
 
-| 参数 | 说明 | 默认 |
-| --- | --- | --- |
-| `title` | 文章标题（必填） | — |
-| `--source` | 来源（如微信链接） | 空 |
-| `-o, --output` | 输出目录 | `output/`（或 `CONTENT_PIPELINE_OUTPUT` 环境变量） |
-
-按文件名自动发现的产物：
-
-| 文件名 | 对应 `outputs` 键 |
+| 参数 | 说明 |
 | --- | --- |
-| `*小红书版.html` | `xiaohongshu` |
-| `*即刻文案.txt` | `jike` |
-| `*播客脚本.md` + `*.mp3` | `xiaoyuzhou` |
-| `*.md`（非播客脚本）+ `*_preview.html` + `*封面.html` | `wechat` |
+| `--html` | 排版后的 `_preview.html` 路径（API 发布必填） |
+| `--markdown` | 文章 Markdown 路径（仅手动兜底时用） |
+| `--title` | 文章标题 |
+| `--author` | 作者 |
+| `--digest` | 文章摘要（120字内） |
+| `--cover` | 封面图路径 |
+| `--image` | 文章配图路径（可重复） |
+
+走微信公众平台 API 直推草稿，需配置 `WECHAT_APPID` / `WECHAT_APPSECRET`（见下方环境变量），
+或写入 `~/.config/wechat-api/config.json`（`{"appId": "...", "appSecret": "..."}`）。未配置或 API
+失败时自动降级为手动模式，并打印 HTML/Markdown 文件路径。
 
 ```bash
-bpt manifest "文章标题" -o ./out/
-bpt manifest "文章标题" --source "https://mp.weixin.qq.com/s/xxx" -o ./out/
+bpt gzh --html ./out/文章_preview.html --title "标题" --author "01fish" --digest "摘要" --cover ./out/封面.png
+bpt gzh --html ./out/文章_preview.html --image ./out/配图1.png --image ./out/配图2.png --preview
 ```
 
-#### `manifest.json` 格式
+### `xhs` — 发布到小红书
 
-`manifest` 命令生成的 `manifest.json`（schema 版本 `1.0`），也是 `gzh`/`xhs`/`jike`/`douyin`/`xiaoyuzhou`/`shipinhao` 读取的输入：
-
-```json
-{
-  "version": "1.0",
-  "created": "2026-09-19T10:33:09",
-  "source": "https://mp.weixin.qq.com/s/xxx",
-  "title": "文章标题",
-  "author": "",
-  "outputs": {
-    "xiaohongshu": {
-      "html": "/path/to/xxx-小红书版.html"
-    },
-    "jike": {
-      "copy": {
-        "body": "即刻正文..."
-      }
-    },
-    "xiaoyuzhou": {
-      "script": "/path/to/xxx-播客脚本.md",
-      "audio": "/path/to/podcast.mp3"
-    },
-    "wechat": {
-      "markdown": "/path/to/article.md",
-      "html": "/path/to/article_preview.html",
-      "title": "文章标题",
-      "cover_image": "/path/to/cover.png"
-    },
-    "video": {
-      "intro": "/path/to/intro.mp4",
-      "outro": "/path/to/outro.mp4",
-      "prompts": "/path/to/video-prompts.md"
-    },
-    "douyin": {
-      "video": "/path/to/video.mp4",
-      "copy": {
-        "title": "标题",
-        "description": "描述",
-        "tags": ["#标签"]
-      }
-    }
-  }
-}
+```text
+usage: bpt xhs [-h] [--title TITLE] [--body BODY] [--images-dir IMAGES_DIR] [--tag TAG] [-p] [-H]
 ```
 
-字段说明：
-
-| 字段 | 说明 |
+| 参数 | 说明 |
 | --- | --- |
-| `version` | schema 版本，当前为 `1.0` |
-| `created` | 生成时间，ISO 8601（秒级） |
-| `source` | 来源（如微信链接），可为空 |
-| `title` | 文章标题 |
-| `author` | 作者，可为空 |
-| `outputs` | 各平台内容，只出现对应产物被发现的键 |
+| `--title` | 小红书标题 |
+| `--body` | 正文内容 |
+| `--images-dir` | 图片目录（上传其中的 png/jpg/webp） |
+| `--tag` | 话题标签（可重复） |
 
-`outputs` 各键与分发命令的对应关系：
+```bash
+bpt xhs --title "小红书标题" --body "正文内容" --images-dir ./out/images --tag "#AI工具" --tag "#ClaudeCode"
+bpt xhs --title "标题" --body "正文" --images-dir ./out/images --preview
+```
 
-| 键 | 消费命令 | 必需字段 |
-| --- | --- | --- |
-| `wechat` | `gzh` | `html`（或 `markdown`） |
-| `xiaohongshu` | `xhs` | `html`、`images_dir`、`copy` |
-| `jike` | `jike` | `copy.body`、`copy.circles` |
-| `xiaoyuzhou` | `xiaoyuzhou` | `audio`、`copy` |
-| `video` | `shipinhao` | `intro`/`outro`/`prompts`（任一） |
-| `douyin` | `douyin` | `video`、`copy` |
+### `jike` — 发布到即刻
 
-> `manifest` 命令只按文件名自动发现 `xiaohongshu` / `jike` / `xiaoyuzhou` / `wechat`
-> 四类产物；`video`（视频号）与 `douyin`（抖音）需由其它步骤生成后手动补进
-> `outputs`，或直接手写 `manifest.json`。
+```text
+usage: bpt jike [-h] [--body BODY] [--circle CIRCLE] [-p] [-H]
+```
 
-> **注意**：
-> - `gzh` 走微信公众平台 API 直推草稿，需配置 `WECHAT_APPID` / `WECHAT_APPSECRET`（见下方环境变量），
->   或写入 `~/.config/wechat-api/config.json`（`{"appId": "...", "appSecret": "..."}`）。未配置或 API
->   失败时自动降级为手动模式，并打印 HTML/Markdown 文件路径。
-> - 浏览器抓取类命令（`xhs`/`jike`/`douyin`/`xiaoyuzhou`）使用 Playwright 弹出的可见浏览器，需在页面里
->   手动登录对应创作者后台（登录状态不跨运行保存）。页面 UI 升级时选择器可能失效，需相应调整脚本。
-> - `douyin`（抖音）反自动化较激进，属实验性功能。
-> - 完整闭环：`bpt manifest "标题" -o ./out/` → `bpt gzh/xhs/jike/douyin/xiaoyuzhou/shipinhao ./out/manifest.json`。
+| 参数 | 说明 |
+| --- | --- |
+| `--body` | 即刻正文 |
+| `--circle` | 圈子（可重复） |
+
+```bash
+bpt jike --body "即刻正文" --circle "#ClaudeCode" --circle "#AI工具"
+```
+
+### `douyin` — 发布到抖音
+
+```text
+usage: bpt douyin [-h] [--video VIDEO] [--title TITLE] [--description DESCRIPTION] [--tag TAG] [-p] [-H]
+```
+
+| 参数 | 说明 |
+| --- | --- |
+| `--video` | 视频文件路径 |
+| `--title` | 视频标题 |
+| `--description` | 视频描述 |
+| `--tag` | 话题标签（可重复） |
+
+> 抖音反自动化较激进，属实验性功能。
+
+```bash
+bpt douyin --video ./out/video.mp4 --title "标题" --description "描述" --tag "#标签"
+```
+
+### `xiaoyuzhou` — 发布到小宇宙
+
+```text
+usage: bpt xiaoyuzhou [-h] [--audio AUDIO] [--title TITLE] [--description DESCRIPTION] [--show-notes SHOW_NOTES] [-p] [-H]
+```
+
+| 参数 | 说明 |
+| --- | --- |
+| `--audio` | 音频文件路径 |
+| `--title` | 播客标题 |
+| `--description` | 播客简介 |
+| `--show-notes` | 完整 show notes |
+
+```bash
+bpt xiaoyuzhou --audio ./out/podcast.mp3 --title "EP01丨标题" --description "简介" --show-notes "文稿"
+```
+
+### `shipinhao` — 视频号（仅手动指引）
+
+```text
+usage: bpt shipinhao [-h] [--intro INTRO] [--outro OUTRO] [--prompts PROMPTS]
+```
+
+| 参数 | 说明 |
+| --- | --- |
+| `--intro` | 片头视频路径 |
+| `--outro` | 片尾视频路径 |
+| `--prompts` | 提词器文案路径 |
+
+```bash
+bpt shipinhao --intro ./out/intro.mp4 --outro ./out/outro.mp4 --prompts ./out/prompts.md
+```
+
+> 浏览器抓取类命令（`xhs`/`jike`/`douyin`/`xiaoyuzhou`）使用 Playwright 弹出的可见浏览器，需在页面里
+> 手动登录对应创作者后台（登录状态不跨运行保存）。页面 UI 升级时选择器可能失效，需相应调整脚本。
 
 ---
 

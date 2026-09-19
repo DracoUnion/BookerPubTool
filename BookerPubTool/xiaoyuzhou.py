@@ -9,7 +9,7 @@ Opens studio.xiaoyuzhoufm.com, uploads audio, fills show notes.
 import os
 from os import path
 from .util import timestr, plrt_create_driver
-from .distribute import load_manifest, get_outputs, status_print, hold_browser
+from .distribute import status_print, hold_browser
 
 XIAOYUZHOU_URL = 'https://studio.xiaoyuzhoufm.com/'
 
@@ -24,21 +24,14 @@ SELECTORS = {
 
 
 def publish_xiaoyuzhou(args):
-    manifest = load_manifest(args.manifest)
-    xy_data = get_outputs(manifest).get('xiaoyuzhou')
-    if not xy_data:
-        status_print('skipped', 'No Xiaoyuzhou content in manifest')
-        return
-
-    audio = xy_data.get('audio')
+    audio = args.audio
     if not audio or not path.exists(audio):
         status_print('manual', f'Audio file not found: {audio}. Upload manually.')
         return
 
-    copy = xy_data.get('copy') or {}
-    title = copy.get('title') or ''
-    description = copy.get('description') or ''
-    show_notes = copy.get('show_notes') or ''
+    title = args.title or ''
+    description = args.description or ''
+    show_notes = args.show_notes or ''
 
     with plrt_create_driver(headless=args.headless) as (browser, context, page):
         page.goto(XIAOYUZHOU_URL, wait_until='domcontentloaded')
@@ -114,6 +107,12 @@ def publish_xiaoyuzhou(args):
 
 def reg_subparser(subparsers):
     parser = subparsers.add_parser("xiaoyuzhou", help="publish to Xiaoyuzhou (小宇宙)")
-    from .distribute import add_common_args
-    add_common_args(parser)
+    parser.add_argument("--audio", help="音频文件路径")
+    parser.add_argument("--title", help="播客标题")
+    parser.add_argument("--description", help="播客简介")
+    parser.add_argument("--show-notes", help="完整 show notes")
+    parser.add_argument("-p", "--preview", action="store_true",
+                        help="只预填不发布，留浏览器给人工审阅")
+    parser.add_argument("-H", "--headless", action="store_true",
+                        help="无头模式运行 Chromium")
     parser.set_defaults(func=publish_xiaoyuzhou)

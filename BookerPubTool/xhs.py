@@ -10,7 +10,7 @@ import os
 import re
 from os import path
 from .util import timestr, plrt_create_driver
-from .distribute import load_manifest, get_outputs, status_print, hold_browser
+from .distribute import status_print, hold_browser
 
 CREATOR_URL = 'https://creator.xiaohongshu.com/publish/publish'
 
@@ -26,16 +26,9 @@ SELECTORS = {
 
 
 def publish_xhs(args):
-    manifest = load_manifest(args.manifest)
-    xhs_data = get_outputs(manifest).get('xiaohongshu')
-    if not xhs_data:
-        status_print('skipped', 'No Xiaohongshu content in manifest')
-        return
-
-    copy = xhs_data.get('copy') or {}
-    title = copy.get('title') or ''
-    body = copy.get('body') or ''
-    tags = copy.get('tags') or []
+    title = args.title or ''
+    body = args.body or ''
+    tags = args.tag or []
 
     with plrt_create_driver(headless=args.headless) as (browser, context, page):
         page.goto(CREATOR_URL, wait_until='domcontentloaded')
@@ -55,7 +48,7 @@ def publish_xhs(args):
             return
 
         # Upload images if available
-        images_dir = xhs_data.get('images_dir')
+        images_dir = args.images_dir
         if images_dir and path.isdir(images_dir):
             files = sorted(
                 path.join(images_dir, f) for f in os.listdir(images_dir)
@@ -127,6 +120,12 @@ def publish_xhs(args):
 
 def reg_subparser(subparsers):
     parser = subparsers.add_parser("xhs", help="publish to Xiaohongshu (小红书)")
-    from .distribute import add_common_args
-    add_common_args(parser)
+    parser.add_argument("--title", help="小红书标题")
+    parser.add_argument("--body", help="正文内容")
+    parser.add_argument("--images-dir", help="图片目录")
+    parser.add_argument("--tag", action="append", help="话题标签（可重复）")
+    parser.add_argument("-p", "--preview", action="store_true",
+                        help="只预填不发布，留浏览器给人工审阅")
+    parser.add_argument("-H", "--headless", action="store_true",
+                        help="无头模式运行 Chromium")
     parser.set_defaults(func=publish_xhs)

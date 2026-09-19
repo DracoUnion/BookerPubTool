@@ -16,7 +16,7 @@ from urllib.parse import unquote
 from datetime import datetime
 from os import path
 from .util import timestr, request_retry, read_file
-from .distribute import load_manifest, get_outputs, status_print
+from .distribute import status_print
 
 WECHAT_API_BASE = 'https://api.weixin.qq.com'
 MAX_RETRIES = 2
@@ -262,10 +262,9 @@ def create_draft(token, article):
 
 # ─── Main Orchestrator ───
 
-def publish_via_api(manifest):
-    wechat_data = manifest['outputs'].get('wechat')
+def publish_via_api(wechat_data):
     if not wechat_data:
-        raise RuntimeError('No wechat data in manifest')
+        raise RuntimeError('No wechat data provided')
 
     has_html = wechat_data.get('html') and path.exists(wechat_data['html'])
     has_markdown = wechat_data.get('markdown') and path.exists(wechat_data['markdown'])
@@ -274,10 +273,9 @@ def publish_via_api(manifest):
         raise RuntimeError(
             'Markdown-only mode is no longer supported.\n'
             'Please convert markdown to HTML first using content-pipeline md2wechat_formatter.py, '
-            'then set wechat.html in the manifest to the generated _preview.html path.')
+            'then pass --html to the generated _preview.html path.')
     if not has_html:
-        raise RuntimeError('No wechat HTML file in manifest. Provide wechat.html '
-                           'pointing to a _preview.html file.')
+        raise RuntimeError('No wechat HTML file provided. Pass --html pointing to a _preview.html file.')
 
     creds = load_credentials()
     if not creds:
@@ -289,7 +287,7 @@ def publish_via_api(manifest):
     print(f'{timestr()}  [wechat-api] Using pre-rendered HTML')
     extracted = extract_article_content(wechat_data['html'])
     html_content = extracted['content']  # pre-rendered HTML needs no <style> wrapper
-    title = wechat_data.get('title') or manifest.get('title')
+    title = wechat_data.get('title')
     author = wechat_data.get('author')
     digest = wechat_data.get('digest')
 
@@ -298,7 +296,7 @@ def publish_via_api(manifest):
 
     content = upload_local_images_in_html(content, token)
 
-    # Upload manifest.images and insert into article content
+    # Upload article images and insert into article content
     images = wechat_data.get('images') or []
     if images:
         print(f'  [wechat-api] Uploading {len(images)} article image(s)...')
@@ -345,8 +343,7 @@ def publish_via_api(manifest):
         print(f'{timestr()}  [wechat-api] No cover image specified, using first content image...')
         thumb_media_id = upload_cover_image(token, images[0])
     else:
-        raise RuntimeError('No cover image available. Provide cover_image in manifest or '
-                           'ensure article has images.')
+        raise RuntimeError('No cover image available. Provide --cover or ensure article has images.')
     if not thumb_media_id:
         raise RuntimeError('Failed to obtain cover image media_id')
 
@@ -360,24 +357,28 @@ def publish_via_api(manifest):
 
 
 def publish_gzh(args):
-    manifest = load_manifest(args.manifest)
-    wechat_data = get_outputs(manifest).get('wechat')
-    if not wechat_data:
-        status_print('skipped', 'No WeChat content in manifest')
-        return
+    wechat_data = {
+        'html': args.html,
+        'markdown': args.markdown,
+        'title': args.title,
+        'author': args.author,
+        'digest': args.digest,
+        'cover_image': args.cover,
+        'images': args.image or [],
+    }
 
-    has_html = wechat_data.get('html') and path.exists(wechat_data['html'])
-    has_markdown = wechat_data.get('markdown') and path.exists(wechat_data['markdown'])
+    has_html = wechat_data['html'] and path.exists(wechat_data['html'])
+    has_markdown = wechat_data['markdown'] and path.exists(wechat_data['markdown'])
     if not has_html and not has_markdown:
         status_print('manual',
-                     'No HTML or Markdown file found in manifest. Provide wechat.html (rendered '
-                     '_preview.html) or wechat.markdown.')
+                     'No HTML or Markdown file provided. Pass --html (rendered _preview.html) '
+                     'or --markdown.')
         return
 
     # L0: primary draft via API (skipped in preview mode)
     if not getattr(args, 'preview', False):
         try:
-            result = publish_via_api(manifest)
+            result = publish_via_api(wechat_data)
             status_print('success',
                          f'Article pushed to drafts via API (media_id: {result["media_id"]})')
             return
@@ -386,12 +387,21 @@ def publish_gzh(args):
             print(f'  [gzh] API mode failed: {reason}')
 
     # L3: manual fallback
-    file_path = wechat_data.get('html') if has_html else wechat_data.get('markdown')
+    file_path = wechat_data['html'] if has_html else wechat_data['markdown']
     status_print('manual', f'API publish failed or preview mode. File: {file_path}')
 
 
 def reg_subparser(subparsers):
     parser = subparsers.add_parser("gzh", help="publish article to WeChat Official Account (公众号)")
-    from .distribute import add_common_args
-    add_common_args(parser)
+    parser.add_argument("--html", help="排版后的 _preview.html 路径")
+    parser.add_argument("--markdown", help="文章 Markdown 路径")
+    parser.add_argument("--title", help="文章标题")
+    parser.add_argument("--author", help="作者")
+    parser.add_argument("--digest", help="文章摘要（120字内）")
+    parser.add_argument("--cover", help="封面图路径")
+    parser.add_argument("--image", action="append", help="文章配图路径（可重复）")
+    parser.add_argument("-p", "--preview", action="store_true",
+                        help="只预填不发布，留浏览器给人工审阅")
+    parser.add_argument("-H", "--headless", action="store_true",
+                        help="无头模式运行 Chromium")
     parser.set_defaults(func=publish_gzh)

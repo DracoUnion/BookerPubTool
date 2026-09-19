@@ -9,7 +9,7 @@ EXPERIMENTAL: Douyin has aggressive anti-automation.
 import os
 from os import path
 from .util import timestr, plrt_create_driver
-from .distribute import load_manifest, get_outputs, status_print, hold_browser
+from .distribute import status_print, hold_browser
 
 DOUYIN_URL = 'https://creator.douyin.com/creator-micro/content/upload'
 
@@ -23,21 +23,14 @@ SELECTORS = {
 
 
 def publish_douyin(args):
-    manifest = load_manifest(args.manifest)
-    douyin_data = get_outputs(manifest).get('douyin')
-    if not douyin_data:
-        status_print('skipped', 'No Douyin content in manifest')
-        return
-
-    video = douyin_data.get('video')
+    video = args.video
     if not video or not path.exists(video):
         status_print('manual', f'Video file not found: {video}. Upload manually.')
         return
 
-    copy = douyin_data.get('copy') or {}
-    title = copy.get('title') or ''
-    description = copy.get('description') or ''
-    tags = copy.get('tags') or []
+    title = args.title or ''
+    description = args.description or ''
+    tags = args.tag or []
 
     with plrt_create_driver(headless=args.headless) as (browser, context, page):
         page.goto(DOUYIN_URL, wait_until='domcontentloaded')
@@ -113,6 +106,12 @@ def publish_douyin(args):
 
 def reg_subparser(subparsers):
     parser = subparsers.add_parser("douyin", help="publish to Douyin (抖音)")
-    from .distribute import add_common_args
-    add_common_args(parser)
+    parser.add_argument("--video", help="视频文件路径")
+    parser.add_argument("--title", help="视频标题")
+    parser.add_argument("--description", help="视频描述")
+    parser.add_argument("--tag", action="append", help="话题标签（可重复）")
+    parser.add_argument("-p", "--preview", action="store_true",
+                        help="只预填不发布，留浏览器给人工审阅")
+    parser.add_argument("-H", "--headless", action="store_true",
+                        help="无头模式运行 Chromium")
     parser.set_defaults(func=publish_douyin)

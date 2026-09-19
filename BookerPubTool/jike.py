@@ -7,7 +7,7 @@ Opens web.okjike.com, fills in post content.
 """
 
 from .util import timestr, plrt_create_driver
-from .distribute import load_manifest, get_outputs, status_print, hold_browser
+from .distribute import status_print, hold_browser
 
 JIKE_URL = 'https://web.okjike.com/'
 
@@ -20,14 +20,8 @@ SELECTORS = {
 
 
 def publish_jike(args):
-    manifest = load_manifest(args.manifest)
-    jike_data = get_outputs(manifest).get('jike')
-    if not jike_data:
-        status_print('skipped', 'No Jike content in manifest')
-        return
-
-    copy = jike_data.get('copy') or {}
-    body = copy.get('body') or ''
+    body = args.body or ''
+    circles = args.circle or []
 
     with plrt_create_driver(headless=args.headless) as (browser, context, page):
         page.goto(JIKE_URL, wait_until='domcontentloaded')
@@ -66,7 +60,7 @@ def publish_jike(args):
             return
 
         if args.preview:
-            circles = '、'.join(copy.get('circles') or [])
+            circles = '、'.join(circles)
             status_print('assisted',
                          f'Content pre-filled in Jike editor. Circles: {circles}')
             if not args.headless:
@@ -87,6 +81,10 @@ def publish_jike(args):
 
 def reg_subparser(subparsers):
     parser = subparsers.add_parser("jike", help="publish to Jike (即刻)")
-    from .distribute import add_common_args
-    add_common_args(parser)
+    parser.add_argument("--body", help="即刻正文")
+    parser.add_argument("--circle", action="append", help="圈子（可重复）")
+    parser.add_argument("-p", "--preview", action="store_true",
+                        help="只预填不发布，留浏览器给人工审阅")
+    parser.add_argument("-H", "--headless", action="store_true",
+                        help="无头模式运行 Chromium")
     parser.set_defaults(func=publish_jike)
