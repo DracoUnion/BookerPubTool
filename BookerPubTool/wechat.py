@@ -185,6 +185,41 @@ def extract_article_content(html):
     return {'content': _strip_tip_elements(m.group(1).strip()), 'styles': styles}
 
 
+def extract_article_meta(html):
+    """Pull title / digest fallbacks from a WeChat-formatted HTML file.
+
+    - title  ← <title> tag (render_markdown_text writes the article title here)
+    - digest ← first ~120 chars of plain text stripped from the article body
+    """
+    meta = {'title': None, 'digest': None}
+
+    m = re.search(r'<title[^>]*>([\s\S]*?)</title>', html, flags=re.IGNORECASE)
+    if m:
+        title = m.group(1).strip()
+        if title and title.lower() not in ('untitled', 'none'):
+            meta['title'] = title
+
+    body = html
+    bm = re.search(r'<div[^>]*id=["\']output["\'][^>]*>([\s\S]*?)</div>\s*(?:</body>|<script|$)',
+                   html, flags=re.IGNORECASE)
+    if not bm:
+        bm = re.search(
+            r'<div[^>]*class=["\'][^"\']*\bcontent\b[^"\']*["\'][^>]*>([\s\S]*?)</div>\s*(?:</body>|<script>$)',
+            html, flags=re.IGNORECASE)
+    if not bm:
+        bm = re.search(r'<body[^>]*>([\s\S]*?)</body>', html, flags=re.IGNORECASE)
+    if bm:
+        body = bm.group(1)
+
+    text = re.sub(r'<(script|style)[^>]*>[\s\S]*?</\1>', '', body, flags=re.IGNORECASE)
+    text = re.sub(r'<[^>]+>', '', text)
+    text = re.sub(r'\s+', '', text)
+    if text:
+        meta['digest'] = text[:120]
+
+    return meta
+
+
 LOCAL_IMG_RE = re.compile(r'src=["\'](/(?:Users|home|tmp|var)[^"\']+\.(?:png|jpg|jpeg|gif|webp|bmp))["\']',
                           re.IGNORECASE)
 
@@ -397,6 +432,19 @@ def publish_gzh(args):
         'cover_image': args.cover,
         'images': args.image or [],
     }
+
+    # --title / --digest 为空时，从 HTML 里解析（<title> 取标题，正文前 120 字取摘要）
+    if not wechat_data['title'] or not wechat_data['digest']:
+        try:
+            meta = extract_article_meta(read_file(html_path, 'utf-8'))
+            if not wechat_data['title'] and meta.get('title'):
+                wechat_data['title'] = meta['title']
+                print(f'{timestr()}  [gzh] 标题取自 HTML: {wechat_data["title"]}')
+            if not wechat_data['digest'] and meta.get('digest'):
+                wechat_data['digest'] = meta['digest']
+                print(f'{timestr()}  [gzh] 摘要取自 HTML（前120字）')
+        except Exception as e:
+            print(f'{timestr()}  [gzh] 解析 HTML meta 失败: {e}')
 
     has_html = wechat_data['html'] and path.exists(wechat_data['html'])
     if not has_html:

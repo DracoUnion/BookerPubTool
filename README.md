@@ -232,9 +232,9 @@ usage: bpt gzh [-h] [--input INPUT] [--title TITLE] [--author AUTHOR]
 | 参数 | 说明 |
 | --- | --- |
 | `--input` | 输入文件路径：`.md` 会自动调用 `wx-html` 排版为 HTML；`.html` 直接使用 |
-| `--title` | 文章标题 |
+| `--title` | 文章标题（为空时从 HTML 的 `<title>` 标签解析） |
 | `--author` | 作者（默认 `布客飞龙`） |
-| `--digest` | 文章摘要（120字以内） |
+| `--digest` | 文章摘要（为空时取 HTML 正文前 120 字） |
 | `--cover` | 封面图文件路径 |
 | `--image` | 文章配图文件路径（可重复指定） |
 | `--theme` | Markdown 排版配色主题（`01fish` / `chinese` / `apple`，默认 `01fish`） |
