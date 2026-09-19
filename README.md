@@ -70,7 +70,7 @@ bpt pub-docker ./docs
 
 ```bash
 bpt gzh --html ./out/文章_preview.html --title "标题" --author "01fish" --digest "摘要" --cover ./out/封面.png
-bpt xhs --title "小红书标题" --body "正文" --images-dir ./out/images --tag "#AI工具" --tag "#ClaudeCode" --preview
+bpt xhs --input ./out/文章-小红书文案.txt --images-dir ./out/images --preview
 bpt jike --body "即刻正文" --circle "#ClaudeCode" --circle "#AI工具"
 bpt douyin --video ./out/video.mp4 --title "标题" --description "描述" --tag "#标签"
 bpt xiaoyuzhou --audio ./out/podcast.mp3 --title "EP01丨标题" --description "简介" --show-notes "文稿"
@@ -250,19 +250,33 @@ bpt gzh --html ./out/文章_preview.html --image ./out/配图1.png --image ./out
 ### `xhs` — 发布到小红书
 
 ```text
-usage: bpt xhs [-h] [--title TITLE] [--body BODY] [--images-dir IMAGES_DIR] [--tag TAG] [-p] [-H]
+usage: bpt xhs [-h] [--input INPUT] [--images-dir IMAGES_DIR] [-p] [-H]
 ```
 
 | 参数 | 说明 |
 | --- | --- |
-| `--title` | 小红书标题 |
-| `--body` | 正文内容 |
+| `--input` | 小红书文案 Markdown 文件路径（含标题/正文/标签） |
 | `--images-dir` | 图片目录（上传其中的 png/jpg/webp 文件） |
-| `--tag` | 话题标签（可重复指定） |
+
+从 `--input` 的 Markdown 中解析标题、正文与标签，支持两种格式：
+
+```text
+格式 A（content-pipeline xiaohongshu 步骤产出）：
+标题：小红书标题
+
+正文内容...
+
+#AI工具 #ClaudeCode #效率
+
+格式 B（普通 Markdown，标题取第一行 H1）：
+# 一级标题
+
+正文
+```
 
 ```bash
-bpt xhs --title "小红书标题" --body "正文内容" --images-dir ./out/images --tag "#AI工具" --tag "#ClaudeCode"
-bpt xhs --title "标题" --body "正文" --images-dir ./out/images --preview
+bpt xhs --input ./out/文章-小红书文案.txt --images-dir ./out/images
+bpt xhs --input ./out/文章-小红书文案.txt --images-dir ./out/images --preview
 ```
 
 ### `jike` — 发布到即刻

@@ -9,7 +9,7 @@ Opens creator.xiaohongshu.com, uploads images, fills in copy.
 import os
 import re
 from os import path
-from .util import timestr, plrt_create_driver
+from .util import timestr, plrt_create_driver, get_md_title, read_file
 from .distribute import status_print, hold_browser
 
 CREATOR_URL = 'https://creator.xiaohongshu.com/publish/publish'
@@ -25,10 +25,57 @@ SELECTORS = {
 }
 
 
+def _parse_xhs_copy(md_text):
+    """Parse the 小红书文案 file written by content-pipeline's xiaohongshu pipeline.
+
+    Format:
+        标题：xxx
+
+        正文...
+
+        #tag1 #tag2 ...
+    Falls back to the first Markdown H1 as the title when no 标题： line.
+    """
+    title = ''
+    body = ''
+    tags = []
+
+    # 标题：xxx
+    m = re.search(r'^标题[：:]\s*(.+)$', md_text, re.M)
+    if m:
+        title = m.group(1).strip()
+        after = md_text[m.end():].strip()
+    else:
+        after = md_text.strip()
+        md_title, _ = get_md_title(md_text)
+        if md_title:
+            title = md_title
+            # Drop the leading H1 line so it doesn't end up in the body
+            after = re.sub(r'^#\s+' + re.escape(title) + r'\s*\n', '', after, count=1).strip()
+
+    # Trailing tags line: #tag #tag ... (a line made only of #tag tokens)
+    tag_match = re.search(r'\n((?:#\S+\s*)+)$', after)
+    if tag_match:
+        body = after[:tag_match.start()].strip()
+        tags = [t for t in tag_match.group(1).split() if t.startswith('#')]
+    else:
+        body = after.strip()
+
+    return title, body, tags
+
+
 def publish_xhs(args):
-    title = args.title or ''
-    body = args.body or ''
-    tags = args.tag or []
+    md_path = args.input
+    if not md_path:
+        status_print('manual', 'No Markdown file provided. Pass --input <小红书文案.md>.')
+        return
+    if not path.exists(md_path):
+        status_print('manual', f'Markdown file not found: {md_path}.')
+        return
+
+    md_text = read_file(md_path, 'utf-8')
+    title, body, tags = _parse_xhs_copy(md_text)
+    print(f'{timestr()}  解析: 标题={title[:30]!r} 正文={len(body)}字 标签={tags}')
 
     with plrt_create_driver(headless=args.headless) as (browser, context, page):
         page.goto(CREATOR_URL, wait_until='domcontentloaded')
@@ -120,10 +167,8 @@ def publish_xhs(args):
 
 def reg_subparser(subparsers):
     parser = subparsers.add_parser("xhs", help="发布到小红书")
-    parser.add_argument("--title", help="小红书标题")
-    parser.add_argument("--body", help="正文内容")
+    parser.add_argument("--input", help="小红书文案 Markdown 文件路径（含标题/正文/标签）")
     parser.add_argument("--images-dir", help="图片目录（上传其中的 png/jpg/webp）")
-    parser.add_argument("--tag", action="append", help="话题标签（可重复指定）")
     parser.add_argument("-p", "--preview", action="store_true",
                         help="只预填内容、不点发布，留浏览器给人工审阅")
     parser.add_argument("-H", "--headless", action="store_true",
