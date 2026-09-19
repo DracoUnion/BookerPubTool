@@ -268,6 +268,79 @@ bpt manifest "文章标题" -o ./out/
 bpt manifest "文章标题" --source "https://mp.weixin.qq.com/s/xxx" -o ./out/
 ```
 
+#### `manifest.json` 格式
+
+`manifest` 命令生成的 `manifest.json`（schema 版本 `1.0`），也是 `gzh`/`xhs`/`jike`/`douyin`/`xiaoyuzhou`/`shipinhao` 读取的输入：
+
+```json
+{
+  "version": "1.0",
+  "created": "2026-09-19T10:33:09",
+  "source": "https://mp.weixin.qq.com/s/xxx",
+  "title": "文章标题",
+  "author": "",
+  "outputs": {
+    "xiaohongshu": {
+      "html": "/path/to/xxx-小红书版.html"
+    },
+    "jike": {
+      "copy": {
+        "body": "即刻正文..."
+      }
+    },
+    "xiaoyuzhou": {
+      "script": "/path/to/xxx-播客脚本.md",
+      "audio": "/path/to/podcast.mp3"
+    },
+    "wechat": {
+      "markdown": "/path/to/article.md",
+      "html": "/path/to/article_preview.html",
+      "title": "文章标题",
+      "cover_image": "/path/to/cover.png"
+    },
+    "video": {
+      "intro": "/path/to/intro.mp4",
+      "outro": "/path/to/outro.mp4",
+      "prompts": "/path/to/video-prompts.md"
+    },
+    "douyin": {
+      "video": "/path/to/video.mp4",
+      "copy": {
+        "title": "标题",
+        "description": "描述",
+        "tags": ["#标签"]
+      }
+    }
+  }
+}
+```
+
+字段说明：
+
+| 字段 | 说明 |
+| --- | --- |
+| `version` | schema 版本，当前为 `1.0` |
+| `created` | 生成时间，ISO 8601（秒级） |
+| `source` | 来源（如微信链接），可为空 |
+| `title` | 文章标题 |
+| `author` | 作者，可为空 |
+| `outputs` | 各平台内容，只出现对应产物被发现的键 |
+
+`outputs` 各键与分发命令的对应关系：
+
+| 键 | 消费命令 | 必需字段 |
+| --- | --- | --- |
+| `wechat` | `gzh` | `html`（或 `markdown`） |
+| `xiaohongshu` | `xhs` | `html`、`images_dir`、`copy` |
+| `jike` | `jike` | `copy.body`、`copy.circles` |
+| `xiaoyuzhou` | `xiaoyuzhou` | `audio`、`copy` |
+| `video` | `shipinhao` | `intro`/`outro`/`prompts`（任一） |
+| `douyin` | `douyin` | `video`、`copy` |
+
+> `manifest` 命令只按文件名自动发现 `xiaohongshu` / `jike` / `xiaoyuzhou` / `wechat`
+> 四类产物；`video`（视频号）与 `douyin`（抖音）需由其它步骤生成后手动补进
+> `outputs`，或直接手写 `manifest.json`。
+
 > **注意**：
 > - `gzh` 走微信公众平台 API 直推草稿，需配置 `WECHAT_APPID` / `WECHAT_APPSECRET`（见下方环境变量），
 >   或写入 `~/.config/wechat-api/config.json`（`{"appId": "...", "appSecret": "..."}`）。未配置或 API
