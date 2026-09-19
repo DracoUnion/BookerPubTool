@@ -6,7 +6,9 @@ Python port of content-pipeline's platforms/jike.ts.
 Opens web.okjike.com, fills in post content.
 """
 
-from .util import timestr, plrt_create_driver
+import re
+from os import path
+from .util import timestr, plrt_create_driver, read_file
 from .distribute import status_print, hold_browser
 
 JIKE_URL = 'https://web.okjike.com/'
@@ -19,9 +21,40 @@ SELECTORS = {
 }
 
 
+def _parse_jike_copy(txt_text):
+    """Parse the 即刻文案 file written by content-pipeline's jike pipeline.
+
+    Format:
+        即刻正文...
+
+        #circle1 #circle2 ...
+    Circles are optional; the body is everything before the trailing tags line.
+    """
+    body = ''
+    circles = []
+
+    m = re.search(r'\n((?:#\S+\s*)+)$', txt_text)
+    if m:
+        body = txt_text[:m.start()].strip()
+        circles = [t for t in m.group(1).split() if t.startswith('#')]
+    else:
+        body = txt_text.strip()
+
+    return body, circles
+
+
 def publish_jike(args):
-    body = args.body or ''
-    circles = args.circle or []
+    txt_path = args.input
+    if not txt_path:
+        status_print('manual', 'No 即刻文案 file provided. Pass --input <即刻文案.txt>.')
+        return
+    if not path.exists(txt_path):
+        status_print('manual', f'即刻文案 file not found: {txt_path}.')
+        return
+
+    txt_text = read_file(txt_path, 'utf-8')
+    body, circles = _parse_jike_copy(txt_text)
+    print(f'{timestr()}  解析: 正文={len(body)}字 圈子={circles}')
 
     with plrt_create_driver(headless=args.headless) as (browser, context, page):
         page.goto(JIKE_URL, wait_until='domcontentloaded')
@@ -81,8 +114,7 @@ def publish_jike(args):
 
 def reg_subparser(subparsers):
     parser = subparsers.add_parser("jike", help="发布到即刻")
-    parser.add_argument("--body", help="即刻正文")
-    parser.add_argument("--circle", action="append", help="圈子（可重复指定）")
+    parser.add_argument("--input", help="即刻文案 TXT 文件路径（含正文与圈子标签）")
     parser.add_argument("-p", "--preview", action="store_true",
                         help="只预填内容、不点发布，留浏览器给人工审阅")
     parser.add_argument("-H", "--headless", action="store_true",

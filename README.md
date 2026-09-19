@@ -71,7 +71,7 @@ bpt pub-docker ./docs
 ```bash
 bpt gzh --html ./out/文章_preview.html --title "标题" --author "01fish" --digest "摘要" --cover ./out/封面.png
 bpt xhs --input ./out/文章-小红书文案.txt --images-dir ./out/images --preview
-bpt jike --body "即刻正文" --circle "#ClaudeCode" --circle "#AI工具"
+bpt jike --input ./out/文章-即刻文案.txt
 bpt douyin --video ./out/video.mp4 --title "标题" --description "描述" --tag "#标签"
 bpt xiaoyuzhou --audio ./out/podcast.mp3 --title "EP01丨标题" --description "简介" --show-notes "文稿"
 bpt shipinhao --intro ./out/intro.mp4 --outro ./out/outro.mp4 --prompts ./out/prompts.md
@@ -282,16 +282,26 @@ bpt xhs --input ./out/文章-小红书文案.txt --images-dir ./out/images --pre
 ### `jike` — 发布到即刻
 
 ```text
-usage: bpt jike [-h] [--body BODY] [--circle CIRCLE] [-p] [-H]
+usage: bpt jike [-h] [--input INPUT] [-p] [-H]
 ```
 
 | 参数 | 说明 |
 | --- | --- |
-| `--body` | 即刻正文 |
-| `--circle` | 圈子（可重复指定） |
+| `--input` | 即刻文案 TXT 文件路径（含正文与圈子标签） |
+
+从 `--input` 的 TXT 中解析正文与圈子标签，格式：
+
+```text
+即刻正文，有干货有观点。
+
+#ClaudeCode #AI工具
+```
+
+（圈子标签为可选，放在文件末尾、以 `#` 开头的行中）
 
 ```bash
-bpt jike --body "即刻正文" --circle "#ClaudeCode" --circle "#AI工具"
+bpt jike --input ./out/文章-即刻文案.txt
+bpt jike --input ./out/文章-即刻文案.txt --preview
 ```
 
 ### `douyin` — 发布到抖音
