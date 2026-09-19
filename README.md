@@ -233,7 +233,7 @@ usage: bpt gzh [-h] [--input INPUT] [--title TITLE] [--author AUTHOR]
 | --- | --- |
 | `--input` | 输入文件路径：`.md` 会自动调用 `wx-html` 排版为 HTML；`.html` 直接使用 |
 | `--title` | 文章标题 |
-| `--author` | 作者 |
+| `--author` | 作者（默认 `布客飞龙`） |
 | `--digest` | 文章摘要（120字以内） |
 | `--cover` | 封面图文件路径 |
 | `--image` | 文章配图文件路径（可重复指定） |

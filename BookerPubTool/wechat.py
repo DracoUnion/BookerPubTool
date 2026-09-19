@@ -424,7 +424,7 @@ def reg_subparser(subparsers):
     parser = subparsers.add_parser("gzh", help="发布文章到微信公众号")
     parser.add_argument("--input", help="输入文件路径：.md 会自动排版为 HTML，.html 直接使用")
     parser.add_argument("--title", help="文章标题")
-    parser.add_argument("--author", help="作者")
+    parser.add_argument("--author", default='布客飞龙', help="作者（默认 布客飞龙）")
     parser.add_argument("--digest", help="文章摘要（120字以内）")
     parser.add_argument("--cover", help="封面图文件路径")
     parser.add_argument("--image", action="append", help="文章配图文件路径（可重复指定）")
