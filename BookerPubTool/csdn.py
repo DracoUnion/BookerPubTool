@@ -130,7 +130,7 @@ def csdn_request(method, url, params=None, body=None, cookies=None, retry=5):
             last_ex = ex
             log.warning('request failed: %s', ex)
         time.sleep(2)
-    raise SystemError('CSDN API 请求失败: %s' % last_ex or 'HTTP 非 200')
+    raise SystemError(f'发布失败 HTTP {resp.status_code}: {resp.text[:300]}')
 
 
 def get_base_info(cookies):
