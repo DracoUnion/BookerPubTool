@@ -205,20 +205,20 @@ def build_payload(title, body, category_ids=None, tags=None, publish=False,
     }
 
 
-def post(s, title, body, category_ids=None, tags=None, publish=False, **kw):
+def post(s, title, body, category_ids=None, tags=None, publish=False, retry=20, **kw):
     payload = build_payload(title, body, category_ids, tags, publish, **kw)
-    r = s.post(urljoin(config['api_base'], config['post_url']),
-               data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
-               headers={'Content-Type': 'application/json'},
-               timeout=config['timeout'])
-    if r.status_code == 200:
-        data = r.json()
-        return data.get('id'), data.get('url'), payload
-    # 400 时把服务端错误提示带出来
-    try:
-        errs = r.json().get('errors', [])
-    except Exception:
-        errs = [r.text[:300]]
+    for i in range(retry):
+        try:
+            r = s.post(urljoin(config['api_base'], config['post_url']),
+                data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
+                headers={'Content-Type': 'application/json'},
+                timeout=config['timeout'])
+            if r.status_code == 200:
+                data = r.json()
+                return data.get('id'), data.get('url'), payload
+            print(f'HTTP {r.status_code}: {r.text[:300]}' )
+        except Exception as ex:
+            print(f'request failed: {ex}')
     raise CnblogsError(f'发布失败 HTTP {r.status_code}: {"; ".join(str(e) for e in errs)}')
 
 
@@ -258,7 +258,7 @@ def post_one(args, s):
 
     post_id, url, _ = post(s, title, body, category_ids, tags, not args.no_publish,
                            entry_name=args.entry_name, description=args.summary,
-                           featured_image=args.featured_image)
+                           featured_image=args.featured_image, retry=args.retry)
     status = '已发布' if not args.no_publish else '草稿'
     print(f'[OK] {status}: id={post_id}  url={url}')
 
@@ -311,6 +311,7 @@ def publish_cnblogs(args):
 def reg_subparser(subparsers):
     p = subparsers.add_parser("cnblogs", help="博客园文章发布")
     p.add_argument('fname', nargs='?', help='Markdown 文件或目录路径（缺省则仅打印各分类，供 --cate 参考）')
+    p.add_argument('-r', '--retry', type=int, default=20, help='重试次数')
     p.add_argument('-c', '--cookie', default='', help='Cookie，默认从浏览器获取')
     p.add_argument('-ct', '--cate', action='append', default=[], help='分类名，可多次指定')
     p.add_argument('-t', '--tags', default='', help='标签，逗号分隔，如 "a,b"')
