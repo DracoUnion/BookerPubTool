@@ -219,7 +219,7 @@ def post(s, title, body, category_ids=None, tags=None, publish=False, retry=20, 
             print(f'HTTP {r.status_code}: {r.text[:300]}' )
         except Exception as ex:
             print(f'request failed: {ex}')
-    raise CnblogsError(f'发布失败 HTTP {r.status_code}: {"; ".join(str(e) for e in errs)}')
+    raise CnblogsError(f'发布失败 HTTP {r.status_code}: {r.text[:300]}')
 
 
 def delete_post(s, post_id):
