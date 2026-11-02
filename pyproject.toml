@@ -43,6 +43,7 @@ dependencies = [
     "markdown",
     "pygments",
     "premailer",
+    "browser_cookie3",
 ]
 
 [project.urls]

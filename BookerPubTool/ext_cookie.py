@@ -1,0 +1,38 @@
+import browser_cookie3 as bc
+from .util import  cookie_dict_to_str
+
+def extract_cookies_multi_browsers(
+        domain,
+        browsers=('firefox', 'chrome', 'edge'),
+    ):
+    for br in browsers:
+        try:
+            ck = extract_cookies(br, domain)
+            if ck: return ck
+        except:
+            pass
+    return {}
+
+def extract_cookies(browser, domain):
+    assert browser in [f.__name__ for f in bc.all_browsers]
+    jar = getattr(bc, browser)()
+    cookies = {
+        c.name:c.value
+        for c in jar
+        if domain in c.domain
+    }
+    return cookies
+
+def ext_cookies_hdl(args):
+    cookies = cookie_dict_to_str(extract_cookies(args.browser, args.domain))
+    print(cookies)
+
+def reg_subparser(subparsers):
+    ext_cookies_parser = subparsers.add_parser("ext-cookies", help="提取 Cookie")
+    ext_cookies_parser.add_argument(
+        "browser",
+        choices=[f.__name__ for f in bc.all_browsers],
+        help="浏览器"
+    )
+    ext_cookies_parser.add_argument("domain", help="域名 (xxx.yyy.com)")
+    ext_cookies_parser.set_defaults(func=ext_cookies_hdl)
