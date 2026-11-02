@@ -229,7 +229,7 @@ def publish_csdn(args):
         print('请提供 MD 文件或目录')
         return
 
-    for f in fnames:
+    for f in fnames[:args.num]:
         try:
             post_one(f, info, cookies, args)
         except KeyboardInterrupt:
@@ -276,6 +276,7 @@ def reg_subparser(subparsers):
     parser.add_argument('-tg', '--tags', default='默认标签', help='标签，逗号分隔')
     parser.add_argument('-d', '--draft', action='store_true', help='存草稿而不发布')
     parser.add_argument('-r', '--retry', type=int, default=20, help='重试次数 (默认 20)')
+    parser.add_argument('-n', '--num', type=int, default=20, help='一次连续发布文章数')
     parser.add_argument('-V', '--verbose', action='store_true', help='打印签名细节')
     parser.add_argument('-del', '--del-id', dest='del_id', default='',
                         help='删除文章/草稿（传文章ID，不发布）')

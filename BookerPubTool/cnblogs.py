@@ -293,7 +293,7 @@ def publish_cnblogs(args):
         if f.endswith('.md')
     ]
 
-    for f in fnames:
+    for f in fnames[:args.num]:
         args.fname = f
         try:
             post_one(args, s)
@@ -312,6 +312,7 @@ def reg_subparser(subparsers):
     p = subparsers.add_parser("cnblogs", help="博客园文章发布")
     p.add_argument('fname', nargs='?', help='Markdown 文件或目录路径（缺省则仅打印各分类，供 --cate 参考）')
     p.add_argument('-r', '--retry', type=int, default=20, help='重试次数')
+    p.add_argument('-n', '--num', type=int, default=50, help='一次连续发布文章数')
     p.add_argument('-c', '--cookie', default='', help='Cookie，默认从浏览器获取')
     p.add_argument('-ct', '--cate', action='append', default=[], help='分类名，可多次指定')
     p.add_argument('-t', '--tags', default='', help='标签，逗号分隔，如 "a,b"')
