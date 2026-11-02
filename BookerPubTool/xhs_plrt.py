@@ -166,7 +166,7 @@ def publish_xhs(args):
 
 
 def reg_subparser(subparsers):
-    parser = subparsers.add_parser("xhs", help="发布到小红书")
+    parser = subparsers.add_parser("xhs-plrt", help="发布到小红书")
     parser.add_argument("--input", help="小红书文案 Markdown 文件路径（含标题/正文/标签）")
     parser.add_argument("--images-dir", help="图片目录（上传其中的 png/jpg/webp）")
     parser.add_argument("-p", "--preview", action="store_true",

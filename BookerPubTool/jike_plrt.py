@@ -113,7 +113,7 @@ def publish_jike(args):
 
 
 def reg_subparser(subparsers):
-    parser = subparsers.add_parser("jike", help="发布到即刻")
+    parser = subparsers.add_parser("jike-plrt", help="发布到即刻")
     parser.add_argument("--input", help="即刻文案 TXT 文件路径（含正文与圈子标签）")
     parser.add_argument("-p", "--preview", action="store_true",
                         help="只预填内容、不点发布，留浏览器给人工审阅")

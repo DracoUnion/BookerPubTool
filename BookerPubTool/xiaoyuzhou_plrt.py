@@ -106,7 +106,7 @@ def publish_xiaoyuzhou(args):
 
 
 def reg_subparser(subparsers):
-    parser = subparsers.add_parser("xiaoyuzhou", help="发布到小宇宙")
+    parser = subparsers.add_parser("xiaoyuzhou-plrt", help="发布到小宇宙")
     parser.add_argument("--audio", help="音频文件路径")
     parser.add_argument("--title", help="播客标题")
     parser.add_argument("--description", help="播客简介")

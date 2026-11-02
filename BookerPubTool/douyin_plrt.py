@@ -105,7 +105,7 @@ def publish_douyin(args):
 
 
 def reg_subparser(subparsers):
-    parser = subparsers.add_parser("douyin", help="发布到抖音")
+    parser = subparsers.add_parser("douyin-plrt", help="发布到抖音")
     parser.add_argument("--video", help="视频文件路径")
     parser.add_argument("--title", help="视频标题")
     parser.add_argument("--description", help="视频描述")
