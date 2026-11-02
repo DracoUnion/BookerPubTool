@@ -236,23 +236,6 @@ def delete_post(s, post_id):
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
-def parse_args(argv=None):
-    p = argparse.ArgumentParser(
-        description='博客园 cnblogs 自动发帖（requests 直连 /api/posts，cookie 取自本地浏览器）')
-    p.add_argument('fname', nargs='?', help='Markdown 文件或目录路径（缺省则仅打印各分类，供 --cate 参考）')
-    p.add_argument('-b', '--browser', default='firefox', choices=['firefox', 'chrome', 'edge'],
-                   help='用哪个浏览器读 cookie（需在其中登录过博客园）')
-    p.add_argument('-c', '--cate', action='append', default=[], help='分类名，可多次指定')
-    p.add_argument('-t', '--tags', default='', help='标签，逗号分隔，如 "a,b"')
-    p.add_argument('--no-publish', action='store_true', help='不直接发布（存草稿）')
-    p.add_argument('--entry-name', default='', help='友好地址名（字母数字-_~，不能全数字）')
-    p.add_argument('--summary', default='', help='摘要描述（默认空，由博客园自动截取）')
-    p.add_argument('--featured-image', default='', help='摘要图 URL')
-    p.add_argument('--images', action='store_true', help='上传 md 中相对路径引用的本地图片并替换 URL')
-    p.add_argument('--title', default=None, help='覆盖标题（默认取 md 第一个 # 行）')
-    p.add_argument('--dry-run', action='store_true', help='只打印将提交的 payload，不发帖')
-    # p.add_argument('--delete', type=int, default=None, metavar='POST_ID', help='删除指定 id 的文章（测试清理用）')
-    return p.parse_args(argv)
 
 def post_one(args, s):
     title, body = parse_md(args.fname)
@@ -279,9 +262,7 @@ def post_one(args, s):
     status = '已发布' if not args.no_publish else '草稿'
     print(f'[OK] {status}: id={post_id}  url={url}')
 
-def main(argv=None):
-    args = parse_args(argv)
-
+def publish_cnblogs(args):
     s = make_session(extract_cookies_multi_browsers('cnblogs.com'))
 
     '''
@@ -319,5 +300,16 @@ def main(argv=None):
             traceback.print_exc()
 
 
-if __name__ == '__main__':
-    main()
+def reg_subparser(subparsers):
+    p = subparsers.add_parser("cnblogs", help="博客园文章发布")
+    p.add_argument('fname', nargs='?', help='Markdown 文件或目录路径（缺省则仅打印各分类，供 --cate 参考）')
+    p.add_argument('-c', '--cate', action='append', default=[], help='分类名，可多次指定')
+    p.add_argument('-t', '--tags', default='', help='标签，逗号分隔，如 "a,b"')
+    p.add_argument('--no-publish', action='store_true', help='不直接发布（存草稿）')
+    p.add_argument('--entry-name', default='', help='友好地址名（字母数字-_~，不能全数字）')
+    p.add_argument('--summary', default='', help='摘要描述（默认空，由博客园自动截取）')
+    p.add_argument('--featured-image', default='', help='摘要图 URL')
+    p.add_argument('--images', action='store_true', help='上传 md 中相对路径引用的本地图片并替换 URL')
+    p.add_argument('--title', default=None, help='覆盖标题（默认取 md 第一个 # 行）')
+    p.add_argument('--dry-run', action='store_true', help='只打印将提交的 payload，不发帖')
+    p.set_defaults(func=publish_cnblogs)

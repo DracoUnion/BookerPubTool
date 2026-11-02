@@ -16,6 +16,8 @@ from . import douyin_plrt
 from . import xiaoyuzhou_plrt
 from . import shipinhao_plrt
 from . import zhihu
+from . import csdn
+from . import cnblogs
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -41,6 +43,8 @@ def main():
     xiaoyuzhou_plrt.reg_subparser(subparsers)
     shipinhao_plrt.reg_subparser(subparsers)
     zhihu.reg_subparser(subparsers)
+    csdn.reg_subparser(subparsers)
+    cnblogs.reg_subparser(subparsers)
 
     args = parser.parse_args()
     args.func(args)

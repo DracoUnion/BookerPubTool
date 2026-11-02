@@ -22,15 +22,10 @@ import logging
 import argparse
 from os import path
 import requests
+import traceback
 import browser_cookie3
-from BookerDownloadTool.ext_cookie import extract_cookies_multi_browsers
-from BookerDownloadTool.util import cookie_str_to_dict
-
-# Windows 控制台 UTF-8 输出（含 argparse help）
-try:
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-except Exception:
-    pass
+from .ext_cookie import extract_cookies_multi_browsers
+from .util import cookie_str_to_dict
 
 log = logging.getLogger('csdn_post')
 
@@ -194,21 +189,7 @@ def save_article(cookies, title, md, cate='默认分类', tags=None,
     )
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        prog='csdn_post', description='CSDN 博客发布 (requests API)',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument('fname', help='MD 文件或目录')
-    parser.add_argument('-c', '--cookie', default='', help='cookie 字符串 (name=v; ...) 或 {name:value} JSON 文件；默认 browser_cookie3 提取')
-    parser.add_argument('-ct', '--cate', default='默认分类', help='分类 (默认: 默认分类)')
-    parser.add_argument('-tg', '--tags', default='默认标签', help='标签，逗号分隔')
-    parser.add_argument('-d', '--draft', action='store_true', help='存草稿而不发布')
-    parser.add_argument('-r', '--retry', type=int, default=20, help='重试次数 (默认 20)')
-    parser.add_argument('-v', '--verbose', action='store_true', help='打印签名细节')
-    parser.add_argument('-del', '--del-id', dest='del_id', default='',
-                        help='删除文章/草稿（传文章ID，不发布）')
-    args = parser.parse_args()
+def publish_csdn(args):
 
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format='%(message)s')
@@ -290,6 +271,18 @@ def post_one(f, info, cookies, args):
     if not args.draft:
         os.remove(f)
 
+def reg_subparser(subparsers):
+    parser = subparsers.add_parser("csdn", help="CSDN 文章发布")
+    parser.add_argument('fname', help='MD 文件或目录')
+    parser.add_argument('-c', '--cookie', default='', help='cookie 字符串 (name=v; ...) 或 {name:value} JSON 文件；默认 browser_cookie3 提取')
+    parser.add_argument('-ct', '--cate', default='默认分类', help='分类 (默认: 默认分类)')
+    parser.add_argument('-tg', '--tags', default='默认标签', help='标签，逗号分隔')
+    parser.add_argument('-d', '--draft', action='store_true', help='存草稿而不发布')
+    parser.add_argument('-r', '--retry', type=int, default=20, help='重试次数 (默认 20)')
+    parser.add_argument('-V', '--verbose', action='store_true', help='打印签名细节')
+    parser.add_argument('-del', '--del-id', dest='del_id', default='',
+                        help='删除文章/草稿（传文章ID，不发布）')
+    parser.set_defaults(func=publish_csdn)
 
 if __name__ == '__main__':
     main()
