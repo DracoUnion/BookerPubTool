@@ -31,13 +31,12 @@ import time
 import traceback
 import uuid
 from os import path
-
 import requests
 
-from BookerDownloadTool import zhihu_sign
-from BookerMarkdownTool.util import get_md_title
-from BookerDownloadTool.ext_cookie import extract_cookies_multi_browsers
-from BookerDownloadTool.util import cookie_dict_to_str
+from . import zhihu_sign
+from .util import get_md_title
+from .ext_cookie import extract_cookies_multi_browsers
+from .util import cookie_dict_to_str
 
 config = {
     'draft_api': 'https://zhuanlan.zhihu.com/api/articles/drafts',

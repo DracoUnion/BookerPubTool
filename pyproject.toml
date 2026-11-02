@@ -45,6 +45,7 @@ dependencies = [
     "premailer",
     "browser_cookie3",
     "xhshow",
+    "quickjs",
 ]
 
 [project.urls]
