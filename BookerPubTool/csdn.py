@@ -284,5 +284,3 @@ def reg_subparser(subparsers):
                         help='删除文章/草稿（传文章ID，不发布）')
     parser.set_defaults(func=publish_csdn)
 
-if __name__ == '__main__':
-    main()
