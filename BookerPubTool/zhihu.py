@@ -294,10 +294,18 @@ def publish_zhihu(args):
         print('请提供 MD 文件或目录')
         return
 
-    cookie = extract_cookies_multi_browsers('zhihu.com')
-    cookie = cookie_dict_to_str(cookie)
-    dc0 = zhihu_sign.get_dc0_from_cookie(cookie)
-    zs = ZhihuSession(cookie, dc0)
+    cookies = ''
+    if args.cookie:
+        cookies = args.cookie
+    else:
+        cookies = extract_cookies_multi_browsers('zhihu.com')
+        print('从浏览器提取到 %d 个 zhihu.com cookie' % len(cookies))
+        cookies = cookie_dict_to_str(cookies)
+    if not cookies:
+        raise SystemError('未获取到 CSDN cookie，请先在浏览器登录 CSDN')
+
+    dc0 = zhihu_sign.get_dc0_from_cookie(cookies)
+    zs = ZhihuSession(cookies, dc0)
 
     for f in fnames:
         print(f'\n===== {f} =====')
@@ -319,7 +327,8 @@ def reg_subparser(subparsers):
     p = subparsers.add_parser("zhihu", help="知乎文章发布")
     p.add_argument('fname', help='Markdown 文件或目录路径')
     p.add_argument('-i', '--col-idx', type=int, default=0, help='专栏序号（从 1 开始，0=不发布到专栏）')
-    p.add_argument('-c', '--col-id', default='', help='按专栏 id 发布（如知 123456，优先于 --col-idx）')
+    p.add_argument('-ci', '--col-id', default='', help='按专栏 id 发布（如知 123456，优先于 --col-idx）')
     p.add_argument('-r', '--retry', type=int, default=3, help='发布失败重试次数')
     p.add_argument('-n', '--dry-run', action='store_true', help='只打印流程不真正发布')
+    p.add_argument('-c', '--cookie', default='', help='cookie 字符串 (name=v; ...)；默认 browser_cookie3 提取')
     p.set_defaults(func=publish_zhihu)

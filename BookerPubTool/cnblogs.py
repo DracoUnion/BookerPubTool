@@ -29,7 +29,7 @@ import traceback
 from os import path
 from urllib.parse import urljoin
 from .ext_cookie import extract_cookies_multi_browsers
-from .util import get_md_title
+from .util import get_md_title, cookie_str_to_dict
 
 import requests
 
@@ -263,7 +263,15 @@ def post_one(args, s):
     print(f'[OK] {status}: id={post_id}  url={url}')
 
 def publish_cnblogs(args):
-    s = make_session(extract_cookies_multi_browsers('cnblogs.com'))
+    cookies = {}
+    if args.cookie:
+        cookies = cookie_str_to_dict(args.cookie)
+    else:
+        cookies = extract_cookies_multi_browsers('cnblogs.com')
+        print('从浏览器提取到 %d 个 cnblogs.com cookie' % len(cookies))
+    if not cookies:
+        raise SystemError('未获取到 CSDN cookie，请先在浏览器登录 CSDN')
+    s = make_session(cookies)
 
     '''
     if args.delete is not None:
@@ -303,7 +311,8 @@ def publish_cnblogs(args):
 def reg_subparser(subparsers):
     p = subparsers.add_parser("cnblogs", help="博客园文章发布")
     p.add_argument('fname', nargs='?', help='Markdown 文件或目录路径（缺省则仅打印各分类，供 --cate 参考）')
-    p.add_argument('-c', '--cate', action='append', default=[], help='分类名，可多次指定')
+    p.add_argument('-c', '--cookie', default='', help='Cookie，默认从浏览器获取')
+    p.add_argument('-ct', '--cate', action='append', default=[], help='分类名，可多次指定')
     p.add_argument('-t', '--tags', default='', help='标签，逗号分隔，如 "a,b"')
     p.add_argument('--no-publish', action='store_true', help='不直接发布（存草稿）')
     p.add_argument('--entry-name', default='', help='友好地址名（字母数字-_~，不能全数字）')

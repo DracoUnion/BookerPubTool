@@ -198,10 +198,7 @@ def publish_csdn(args):
     # cookie 来源: 显式指定 > 本地 JSON > browser_cookie3
     cookies = {}
     if args.cookie:
-        if path.isfile(args.cookie):
-            cookies = json.loads(open(args.cookie, encoding='utf8').read())
-        else:
-            cookies = cookie_str_to_dict(args.cookie)
+        cookies = cookie_str_to_dict(args.cookie)
     else:
         cookies = extract_cookies_multi_browsers('csdn.net')
         print('从浏览器提取到 %d 个 csdn.net cookie' % len(cookies))
@@ -274,7 +271,7 @@ def post_one(f, info, cookies, args):
 def reg_subparser(subparsers):
     parser = subparsers.add_parser("csdn", help="CSDN 文章发布")
     parser.add_argument('fname', help='MD 文件或目录')
-    parser.add_argument('-c', '--cookie', default='', help='cookie 字符串 (name=v; ...) 或 {name:value} JSON 文件；默认 browser_cookie3 提取')
+    parser.add_argument('-c', '--cookie', default='', help='cookie 字符串 (name=v; ...)；默认 browser_cookie3 提取')
     parser.add_argument('-ct', '--cate', default='默认分类', help='分类 (默认: 默认分类)')
     parser.add_argument('-tg', '--tags', default='默认标签', help='标签，逗号分隔')
     parser.add_argument('-d', '--draft', action='store_true', help='存草稿而不发布')
