@@ -26,6 +26,7 @@ import traceback
 import browser_cookie3
 from .ext_cookie import extract_cookies_multi_browsers
 from .util import cookie_str_to_dict
+from .util import get_md_title
 
 log = logging.getLogger('csdn_post')
 
@@ -244,7 +245,6 @@ def post_one(f, info, cookies, args):
     md = open(f, encoding='utf8').read()
     # 图片标记转为 URL（与旧版行为一致）
     md = re.sub(r'!\[[^\]]*\]\(([^\)]+)\)', r'<\1>', md)
-    from BookerMarkdownTool.util import get_md_title
     title, pos = get_md_title(md)
     if not title:
         print('%s MD 文件无标题' % f)
