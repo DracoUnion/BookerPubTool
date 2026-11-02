@@ -229,16 +229,6 @@ def md2html(md):
 # CLI
 # ---------------------------------------------------------------------------
 
-def parse_args(argv=None):
-    p = argparse.ArgumentParser(
-        description='知乎专栏自动发文章（requests 直连 API，cookie 取自本地浏览器）')
-    p.add_argument('fname', help='Markdown 文件或目录路径')
-    p.add_argument('-b', '--browser', default='firefox', help='读 cookie 的浏览器（逗号分隔，默认 firefox）')
-    p.add_argument('-i', '--col-idx', type=int, default=0, help='专栏序号（从 1 开始，0=不发布到专栏）')
-    p.add_argument('-c', '--col-id', default='', help='按专栏 id 发布（如知 123456，优先于 --col-idx）')
-    p.add_argument('-r', '--retry', type=int, default=3, help='发布失败重试次数')
-    p.add_argument('-n', '--dry-run', action='store_true', help='只打印流程不真正发布')
-    return p.parse_args(argv)
 
 
 def post_one(zs, fname, args):
@@ -295,8 +285,7 @@ def fetch_columns_for_user(zs):
     return []
 
 
-def main(argv=None):
-    args = parse_args(argv)
+def publish_zhihu(args):
     if path.isfile(args.fname):
         fnames = [args.fname]
     else:
@@ -326,10 +315,12 @@ def main(argv=None):
             traceback.print_exc()
 
 
-if __name__ == '__main__':
-    try:
-        main()
-    except SystemExit:
-        raise
-    except Exception:
-        traceback.print_exc()
+
+def reg_subparser(subparsers):
+    p = subparsers.add_parser("zhihu", help="知乎文章发布")
+    p.add_argument('fname', help='Markdown 文件或目录路径')
+    p.add_argument('-i', '--col-idx', type=int, default=0, help='专栏序号（从 1 开始，0=不发布到专栏）')
+    p.add_argument('-c', '--col-id', default='', help='按专栏 id 发布（如知 123456，优先于 --col-idx）')
+    p.add_argument('-r', '--retry', type=int, default=3, help='发布失败重试次数')
+    p.add_argument('-n', '--dry-run', action='store_true', help='只打印流程不真正发布')
+    p.set_defaults(func=publish_zhihu)

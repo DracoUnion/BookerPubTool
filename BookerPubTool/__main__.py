@@ -9,12 +9,13 @@ from . import libgen
 from . import zhihu_msger
 from . import git
 from . import kan
-from . import wechat
-from . import xhs
-from . import jike
-from . import douyin
-from . import xiaoyuzhou
-from . import shipinhao
+from . import gzh
+from . import xhs_plrt
+from . import jike_plrt
+from . import douyin_plrt
+from . import xiaoyuzhou_plrt
+from . import shipinhao_plrt
+from . import zhihu
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -33,12 +34,13 @@ def main():
     zhihu_msger.reg_subparser(subparsers)
     git.reg_subparser(subparsers)
     kan.reg_subparser(subparsers)
-    wechat.reg_subparser(subparsers)
-    xhs.reg_subparser(subparsers)
-    jike.reg_subparser(subparsers)
-    douyin.reg_subparser(subparsers)
-    xiaoyuzhou.reg_subparser(subparsers)
-    shipinhao.reg_subparser(subparsers)
+    gzh.reg_subparser(subparsers)
+    xhs_plrt.reg_subparser(subparsers)
+    jike_plrt.reg_subparser(subparsers)
+    douyin_plrt.reg_subparser(subparsers)
+    xiaoyuzhou_plrt.reg_subparser(subparsers)
+    shipinhao_plrt.reg_subparser(subparsers)
+    zhihu.reg_subparser(subparsers)
 
     args = parser.parse_args()
     args.func(args)
