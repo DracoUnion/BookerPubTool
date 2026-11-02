@@ -18,6 +18,7 @@ from . import shipinhao_plrt
 from . import zhihu
 from . import csdn
 from . import cnblogs
+from . import xhs
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -45,6 +46,7 @@ def main():
     zhihu.reg_subparser(subparsers)
     csdn.reg_subparser(subparsers)
     cnblogs.reg_subparser(subparsers)
+    xhs.reg_subparser(subparsers)
 
     args = parser.parse_args()
     args.func(args)

@@ -12,15 +12,13 @@ import os
 import sys
 import json
 import time
+import traceback
 import argparse
 from os import path
 import requests
-import browser_cookie3
+from .util import cookie_str_to_dict
+from .ext_cookie import extract_cookies_multi_browsers
 
-try:  # Windows 控制台 UTF-8 输出（含 argparse help）
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-except Exception:
-    pass
 
 # ─── 域名常量（与 workbench constants.py 一致） ─────────────────────────────
 EDITH_HOST = "https://edith.xiaohongshu.com"
@@ -42,92 +40,13 @@ PLATFORM = "macOS"
 REQUIRED_COOKIES = {"a1", "web_session"}
 
 
-# ─── Cookie 提取（browser_cookie3） ────────────────────────────────────────
-def cookie_str_to_dict(cookie_str: str) -> dict:
-    """把 "k=v; k2=v2" cookie 头字符串解析为字典。"""
-    result = {}
-    for item in cookie_str.split(";"):
-        item = item.strip()
-        if "=" in item:
-            k, v = item.split("=", 1)
-            result[k.strip()] = v.strip()
-    return result
-
-
-def extract_browser_cookies() -> tuple[str, dict]:
-    """从本机浏览器提取小红书 cookie（browser-cookie3，仅读取不启动页面）。
-
-    优先在当前进程内读取；失败（SQLite 被占用/解密异常）时回退到子进程，
-    避免浏览器运行时数据库锁冲突。返回 (browser_name, cookies) 或抛错。
-    """
-    browsers = [("Chrome", browser_cookie3.chrome),
-                ("Firefox", browser_cookie3.firefox),
-                ("Edge", browser_cookie3.edge),
-                ("Brave", browser_cookie3.brave)]
-
-    for name, loader in browsers:
-        try:
-            jar = loader(domain_name=".xiaohongshu.com")
-            cookies = {
-                c.name: c.value
-                for c in jar
-                if "xiaohongshu.com" in (c.domain or "")
-            }
-            if "a1" in cookies and "web_session" in cookies:
-                return name, cookies
-        except Exception:
-            continue
-
-    # 子进程回退（browser_cookie3 读 Cookies 数据库需要解密，主进程可能被桌面浏览器锁住）
-    extract_script = '''
-import json, sys
-try:
-    import browser_cookie3 as bc3
-except ImportError:
-    print(json.dumps({"error": "not_installed"}))
-    sys.exit(0)
-
-browsers = [
-    ("Chrome", bc3.chrome),
-    ("Firefox", bc3.firefox),
-    ("Edge", bc3.edge),
-    ("Brave", bc3.brave),
-]
-for name, loader in browsers:
-    try:
-        cj = loader(domain_name=".xiaohongshu.com")
-        cookies = {c.name: c.value for c in cj if "xiaohongshu.com" in (c.domain or "")}
-        if "a1" in cookies and "web_session" in cookies:
-            print(json.dumps({"browser": name, "cookies": cookies}))
-            sys.exit(0)
-    except Exception:
-        pass
-print(json.dumps({"error": "no_cookies"}))
-'''
-    try:
-        import subprocess
-        result = subprocess.run(
-            [sys.executable, "-c", extract_script],
-            capture_output=True, text=True, timeout=15,
-        )
-        data = json.loads(result.stdout.strip() or "{}")
-        if data.get("cookies"):
-            return data["browser"], data["cookies"]
-    except Exception:
-        pass
-    raise SystemError(
-        "未找到小红书登录 cookie：请先在浏览器登录 https://www.xiaohongshu.com "
-        "并确保浏览器中能访问小红书（含 a1/web_session 两个关键 cookie）"
-    )
-
-
 def get_cookies(cookie: str = "") -> dict:
     """cookie 来源：显式字符串 > 默认 browser_cookie3 提取。返回 {name: value}。"""
     if cookie:
         cookies = cookie_str_to_dict(cookie)
     else:
-        browser, cookies = extract_browser_cookies()
-        print(f'从 {browser} 提取到 {len(cookies)} 个 cookie')
+        cookies = extract_cookies_multi_browsers('xiaohongshu.com')
+        print(f'提取到 {len(cookies)} 个 cookie')
     missing = REQUIRED_COOKIES - cookies.keys()
     if missing:
         raise SystemError(f"cookie 缺少必需字段: {', '.join(sorted(missing))}")
@@ -268,16 +187,7 @@ def xhs_post(cookies: dict, title: str, body: str, retry: int = 20) -> dict:
 
 
 # ─── 入口 ───────────────────────────────────────────────────────────────────
-def main():
-    parser = argparse.ArgumentParser(
-        prog="xhs_post", description="小红书笔记发布 (requests API)",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument("fname", help="TXT/MD 文件或目录（首行当标题，其余为正文）")
-    parser.add_argument("-c", "--cookie", default="", help="cookie 字符串 (name=v; ...)；默认 browser_cookie3 从浏览器提取")
-    parser.add_argument("-r", "--retry", type=int, default=20, help="重试次数 (默认 20)")
-    parser.add_argument("-R", "--keep", action="store_true", help="发布成功后不删除源文件")
-    args = parser.parse_args()
+def publish_xhs(args):
 
     cookies = get_cookies(args.cookie)
 
@@ -296,31 +206,39 @@ def main():
 
     for f in fnames:
         try:
-            print(f)
-            txt = open(f, encoding='utf8').read()
-            m = re.search(r'\A\s*^(.+?)$', txt, flags=re.M)
-            if not m:
-                print(f'{f} 文件无标题，跳过')
-                continue
-            title = m.group(1)
-            pos = m.span()[1]
-            body = txt[pos:].strip()
-            print(f'发布: {title}')
-            data = xhs_post(cookies, title, body, retry=args.retry)
-            note = (data or {}).get('note') or {}
-            note_id = note.get('noteId') or note.get('note_id') or ''
-            print('发布成功:', json.dumps(data, ensure_ascii=False)[:500] if data is not None else 'ok')
-            if note_id:
-                print('笔记ID:', note_id, '访问:', f'https://www.xiaohongshu.com/explore/{note_id}')
-            if not args.keep:
-                os.remove(f)
+            post_one(f, cookies, args)
         except KeyboardInterrupt:
             raise
         except SystemExit:
             raise
         except Exception as ex:
+            traceback.print_exc()
             print(f'{f} 发布异常: {ex}')
 
+def post_one(f, cookies, args):
+    print(f)
+    txt = open(f, encoding='utf8').read()
+    m = re.search(r'\A\s*^(.+?)$', txt, flags=re.M)
+    if not m:
+        print(f'{f} 文件无标题，跳过')
+        return
+    title = m.group(1)
+    pos = m.span()[1]
+    body = txt[pos:].strip()
+    print(f'发布: {title}')
+    data = xhs_post(cookies, title, body, retry=args.retry)
+    note = (data or {}).get('note') or {}
+    note_id = note.get('noteId') or note.get('note_id') or ''
+    print('发布成功:', json.dumps(data, ensure_ascii=False)[:500] if data is not None else 'ok')
+    if note_id:
+        print('笔记ID:', note_id, '访问:', f'https://www.xiaohongshu.com/explore/{note_id}')
+    if not args.keep:
+        os.remove(f)
 
-if __name__ == '__main__':
-    main()
+def reg_subparser(subparsers):
+    parser = subparsers.add_parser("xhs", help="小红书笔记发布")
+    parser.add_argument("fname", help="TXT/MD 文件或目录（首行当标题，其余为正文）")
+    parser.add_argument("-c", "--cookie", default="", help="cookie 字符串 (name=v; ...)；默认 browser_cookie3 从浏览器提取")
+    parser.add_argument("-r", "--retry", type=int, default=20, help="重试次数 (默认 20)")
+    parser.add_argument("-kp", "--keep", action="store_true", help="发布成功后不删除源文件")
+    parser.set_defaults(func=publish_xhs)
