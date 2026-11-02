@@ -18,6 +18,7 @@ from . import shipinhao_plrt
 from . import zhihu
 from . import csdn
 from . import cnblogs
+from . import toutiao
 from . import xhs
 
 def main():
@@ -46,6 +47,7 @@ def main():
     zhihu.reg_subparser(subparsers)
     csdn.reg_subparser(subparsers)
     cnblogs.reg_subparser(subparsers)
+    toutiao.reg_subparser(subparsers)
     xhs.reg_subparser(subparsers)
 
     args = parser.parse_args()
