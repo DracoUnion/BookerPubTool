@@ -19,6 +19,7 @@ from . import zhihu
 from . import csdn
 from . import cnblogs
 from . import toutiao
+from . import weibo
 from . import xhs
 
 def main():
@@ -48,6 +49,7 @@ def main():
     csdn.reg_subparser(subparsers)
     cnblogs.reg_subparser(subparsers)
     toutiao.reg_subparser(subparsers)
+    weibo.reg_subparser(subparsers)
     xhs.reg_subparser(subparsers)
 
     args = parser.parse_args()

@@ -217,6 +217,7 @@ bpt libgen lightnovel ~/book.epub
 | `douyin` | 抖音 | 是 |
 | `xiaoyuzhou` | 小宇宙 | 是 |
 | `shipinhao` | 视频号 | 否（仅手动指引） |
+| `weibo` | 微博 | 是 |
 
 所有命令共用 `-p/--preview`（只预填不发布，留浏览器给人工审阅）与
 `-H/--headless`（无头模式运行 Chromium，默认可见浏览器）。
@@ -309,6 +310,31 @@ usage: bpt jike [-h] [--input INPUT] [-p] [-H]
 ```bash
 bpt jike --input ./out/文章-即刻文案.txt
 bpt jike --input ./out/文章-即刻文案.txt --preview
+```
+
+### `weibo` — 发布到微博
+
+```text
+usage: bpt weibo [-h] [--input INPUT] [-c COOKIE] [-p] [-H]
+                 [--max-chars MAX_CHARS] [--no-title] [-n NUM]
+```
+
+| 参数 | 说明 |
+| --- | --- |
+| `--input` | MD 文件或目录路径（目录下所有 `.md` 依次发布） |
+| `-c, --cookie` | 微博 cookie 字符串（含 `SUB`/`SUBP`）；默认从本机浏览器提取 |
+| `--max-chars` | 每条微博最长字数（默认 2000），超长按段落自动拆分为多条 |
+| `--no-title` | 不在正文前拼接 MD 的 H1 标题 |
+| `-n, --num` | 一次最多处理 MD 文件数（默认 20） |
+
+把每篇 Markdown 的正文（H1 标题默认作为首行）转成纯文本后逐条发布；超长内容
+自动拆分为多条微博。登录态优先使用 `-c` 或本机浏览器 Cookie，无 Cookie 时在
+弹出的浏览器中人工扫码登录。发布失败会退回辅助模式，内容预填后由人工手动发布。
+
+```bash
+bpt weibo --input ./out/文章.md
+bpt weibo --input ./out/articles -n 5 --max-chars 2000
+bpt weibo --input ./out/文章.md --preview
 ```
 
 ### `douyin` — 发布到抖音
