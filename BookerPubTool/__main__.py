@@ -21,6 +21,7 @@ from . import cnblogs
 from . import toutiao
 from . import weibo
 from . import xhs
+from . import bili_video
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -51,6 +52,7 @@ def main():
     toutiao.reg_subparser(subparsers)
     weibo.reg_subparser(subparsers)
     xhs.reg_subparser(subparsers)
+    bili_video.reg_subparser(subparsers)
 
     args = parser.parse_args()
     args.func(args)

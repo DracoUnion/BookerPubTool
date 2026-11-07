@@ -38,7 +38,8 @@ python -m BookerPubTool <cmd> [args]
 ```text
 { pub-docker, pub-pypi, conf-pypi, pub-npm, conf-npm, ebook2site,
   libgen, zhihu-msg, zhihu-crawl-uid, git-init, git-commit, git-push,
-  kancloud, gzh, xhs, jike, douyin, xiaoyuzhou, shipinhao }
+  kancloud, gzh, xhs, jike, douyin, xiaoyuzhou, shipinhao,
+  weibo, toutiao, bili-video }
 ```
 
 每个命令都可以用 `-h` / `--help` 查看详细参数。全局参数：
@@ -218,6 +219,7 @@ bpt libgen lightnovel ~/book.epub
 | `xiaoyuzhou` | 小宇宙 | 是 |
 | `shipinhao` | 视频号 | 否（仅手动指引） |
 | `weibo` | 微博 | 是 |
+| `bili-video` | B 站视频 | 否（创作中心 API） |
 
 所有命令共用 `-p/--preview`（只预填不发布，留浏览器给人工审阅）与
 `-H/--headless`（无头模式运行 Chromium，默认可见浏览器）。
@@ -391,6 +393,34 @@ bpt shipinhao --intro ./out/intro.mp4 --outro ./out/outro.mp4 --prompts ./out/pr
 
 > 浏览器抓取类命令（`xhs`/`jike`/`douyin`/`xiaoyuzhou`）使用 Playwright 弹出的可见浏览器，需在页面里
 > 手动登录对应创作者后台（登录状态不跨运行保存）。页面 UI 升级时选择器可能失效，需相应调整脚本。
+
+### `bili-video` — 发布视频到 B 站
+
+```text
+usage: bpt bili-video [-h] [-t TITLE] [-d DESC] [-c COOKIE] [--tid TID]
+                      [--tag TAG] [-n NUM] [--dry-run] fname [fname ...]
+```
+
+| 参数 | 说明 |
+| --- | --- |
+| `fname` | 视频文件或包含视频的目录（可多个） |
+| `-t, --title` | 视频标题；默认取文件名（不含后缀），多个视频时忽略 |
+| `-d, --desc` | 视频简介 |
+| `-c, --cookie` | cookie 字符串；默认从 Firefox/Chrome/Edge 提取 `bilibili.com` 登录态 |
+| `--tid` | 手动指定分区 ID；默认使用预测接口推荐的第一个分区 |
+| `--tag` | 手动指定标签（逗号分隔）；默认使用推荐标签接口（最多 10 个） |
+| `-n, --num` | 一次最多发布视频数（默认 20） |
+| `--dry-run` | 只上传视频并展示推荐分区/标签，不提交稿件 |
+
+> 走 B 站创作中心 UPOS 上传接口，需要浏览器登录 `bilibili.com` 且 cookie 含 `bili_jct`。
+> 分区由 `x/vupre/web/archive/types/predict` 预测，标签由 `x/vupre/web/tag/recommend` 推荐。
+
+```bash
+bpt bili-video ./out/video.mp4
+bpt bili-video ./out/video.mp4 -t "标题" -d "简介" --tag "编程,教程"
+bpt bili-video ./out/videos -n 5
+bpt bili-video ./out/video.mp4 --dry-run
+```
 
 ---
 
