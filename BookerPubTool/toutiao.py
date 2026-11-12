@@ -296,6 +296,7 @@ def post_one(sess, f, args):
     print(f)
     md = open(f, encoding='utf8').read()
     title, body = parse_md(md, f)
+    title = title[:30]
     html = md_to_html(body)
     print('上传正文图片...')
     html = procure_images(sess, html, path.dirname(path.abspath(f)),
