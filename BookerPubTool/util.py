@@ -235,3 +235,19 @@ def cookie_str_to_dict(cookie_str: str) -> dict:
     # 标准 ; 或 ; 分隔，用 SimpleCookie 解析（自动去引号）
     cookie = SimpleCookie(cookie_str)
     return {key: val.value for key, val in cookie.items()}
+
+def parse_md(md, fname):
+    """返回 (title, body)。标题取第一个 # 行，正文为去掉标题行后的其余内容。"""
+    # 图片标记转为 URL（与旧版行为一致）
+    md = re.sub(r'!\[[^\]]*\]\(([^\)]+)\)', r'<\1>', md)
+    md = md.strip()
+    title, pos = get_md_title(md)
+    if title is None:
+        title = path.splitext(path.basename(fname))[0]
+        body = md
+    else:
+        body = md[pos[1]:]
+    title = re.sub(r'[^\u0000-\uFFFF]', '', title)
+    if len(title) < 5:
+        title *= 5
+    return title[:100], body.strip()

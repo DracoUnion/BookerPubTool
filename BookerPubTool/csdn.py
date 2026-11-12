@@ -25,7 +25,7 @@ import requests
 import traceback
 import browser_cookie3
 from .ext_cookie import extract_cookies_multi_browsers
-from .util import cookie_str_to_dict
+from .util import cookie_str_to_dict, parse_md
 from .util import get_md_title
 
 log = logging.getLogger('csdn_post')
@@ -237,25 +237,11 @@ def publish_csdn(args):
         except:
             traceback.print_exc()
 
-def parse_md(fname):
-    """返回 (title, body)。标题取第一个 # 行，正文为去掉标题行后的其余内容。"""
+def post_one(fname, info, cookies, args):
+    print(fname)
     with open(fname, encoding='utf-8') as f:
         md = f.read()
-    # 图片标记转为 URL（与旧版行为一致）
-    md = re.sub(r'!\[[^\]]*\]\(([^\)]+)\)', r'<\1>', md)
-    title, pos = get_md_title(md)
-    if title is None:
-        title = path.splitext(path.basename(fname))[0]
-        body = md
-    else:
-        body = md[pos[1]:]
-    if len(title) < 5:
-        title *= 5
-    return title[:100], body.strip()
-
-def post_one(f, info, cookies, args):
-    print(f)
-    title, body = parse_md(f)
+    title, body = parse_md(md, fname)
 
     action = '存草稿' if args.draft else '发布'
     print('%s: %s' % (action, title))

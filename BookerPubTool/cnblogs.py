@@ -29,7 +29,7 @@ import traceback
 from os import path
 from urllib.parse import urljoin
 from .ext_cookie import extract_cookies_multi_browsers
-from .util import get_md_title, cookie_str_to_dict
+from .util import get_md_title, cookie_str_to_dict, parse_md
 
 import requests
 
@@ -80,22 +80,6 @@ def make_session(cookies: dict) -> requests.Session:
 # ---------------------------------------------------------------------------
 # Markdown 解析
 # ---------------------------------------------------------------------------
-
-def parse_md(fname):
-    """返回 (title, body)。标题取第一个 # 行，正文为去掉标题行后的其余内容。"""
-    with open(fname, encoding='utf-8') as f:
-        md = f.read()
-    # 图片标记转为 URL（与旧版行为一致）
-    md = re.sub(r'!\[[^\]]*\]\(([^\)]+)\)', r'<\1>', md)
-    title, pos = get_md_title(md)
-    if title is None:
-        title = path.splitext(path.basename(fname))[0]
-        body = md
-    else:
-        body = md[pos[1]:]
-    if len(title) < 5:
-        title *= 5
-    return title[:100], body.strip()
 
 
 def upload_local_images(s, fname, body, category_id=0, visible=True):
@@ -240,7 +224,10 @@ def delete_post(s, post_id):
 # ---------------------------------------------------------------------------
 
 def post_one(args, s):
-    title, body = parse_md(args.fname)
+    with open(args.fname, encoding='utf-8') as f:
+        md = f.read()
+    title, body = parse_md(md, args.fname)
+
     if args.title:
         title = args.title
     if args.images:

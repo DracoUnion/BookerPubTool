@@ -36,7 +36,7 @@ import requests
 from . import zhihu_sign
 from .util import get_md_title
 from .ext_cookie import extract_cookies_multi_browsers
-from .util import cookie_dict_to_str
+from .util import cookie_dict_to_str, parse_md
 
 config = {
     'draft_api': 'https://zhuanlan.zhihu.com/api/articles/drafts',
@@ -233,12 +233,7 @@ def md2html(md):
 def post_one(zs, fname, args):
     """处理单个 md 文件：解析标题 -> 创建草稿 -> 填正文 -> 发布。"""
     md = open(fname, encoding='utf8').read()
-    title, pos = get_md_title(md)
-    if not title:
-        print(f'{fname} MD 文件无标题，跳过')
-        return False
-    title = re.sub(r'[^\u0000-\uFFFF]', '', title)[:100]
-    body_md = md[pos[1]:] if pos else md
+    title, body_md = parse_md(md, fname)
     print(f'[info] 标题: {title}')
     print(f'[info] 正文 md: {len(body_md)} 字符')
 
