@@ -28,7 +28,7 @@ from os import path
 import requests
 from pyquery import PyQuery as pq
 from .ext_cookie import extract_cookies_multi_browsers
-from .util import get_md_title, cookie_str_to_dict, cookie_dict_to_str
+from .util import get_md_title, cookie_str_to_dict, cookie_dict_to_str, parse_md
 
 PUBLISH_URL = ('https://mp.toutiao.com/mp/agw/article/publish'
                '?source=mp&type=article&aid=1231&mp_publish_ab_val=0')
@@ -289,13 +289,7 @@ def publish_toutiao(args):
 def post_one(sess, f, args):
     print(f)
     md = open(f, encoding='utf8').read()
-    title, pos = get_md_title(md)
-    if not title:
-        print('%s MD 文件无标题' % f)
-        return
-    if len(title) < 5:
-        title *= 5
-    body = md[pos[1]:]
+    title, body = parse_md(md)
     html = md_to_html(body)
     print('上传正文图片...')
     html = procure_images(sess, html, path.dirname(path.abspath(f)),
