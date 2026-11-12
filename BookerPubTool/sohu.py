@@ -1,41 +1,49 @@
 # -*- coding: utf-8 -*-
 """搜狐号文章发布（requests 版，结构参照 csdn.py / toutiao.py）
 
-接口通过浏览器访问
-https://mp.sohu.com/mpfe/v4/contentManagement/news/addarticle?contentStatus=1
+接口与签名逆向自搜狐号编辑器微前端（mp_micro_contentmanager）：
 
-抓包整理（逆向自搜狐号编辑器前端 bundle）：
-  * 登录态：浏览器 cookie 中的 .sohu.com 会话（browser_cookie3 直读），
-    需要 mpToken、mp-cv 等字段。
-  * 签名头部 sp-cm：等于 mp-cv cookie 的值，通过
-    window.ClientSignIns.tools.spcm.setHeader() 注入。
-  * 发布文章:
-      POST https://mp.sohu.com/mpfe/v4/contentManagement/news/addarticle?contentStatus=1
-      body 为 JSON，包含 title / content 等字段。
-      需要请求头：mpToken（cookie 中的 mpToken）、sp-cm（= mp-cv cookie 值）。
+  * 基础域名: https://mp.sohu.com
+  * 发布文章: POST /mpbp/bp/news/v4/news/publish/v2?accountId=<id>
+  * 保存草稿: POST /mpbp/bp/news/v4/news/draft/v2?accountId=<id>
+  * 账号信息: GET  /mpbp/bp/account/info?accountId=<id>   （取 channelId）
+
+  请求头:
+    Content-Type: application/json
+    X-Requested-With: XMLHttpRequest          （缺失会返回 code=1301 获取客户端失败）
+    sp-cm: <mp-cv cookie 值>                  （前端 ClientSignIns.tools.setHeader 注入）
+    Cookie: 浏览器 .sohu.com 会话（ppinf / mp-cv / mpCreatorId 等）
+
+  accountId 从 cookie mpCreatorId（URL 编码的 JSON {"id":...,"status":...}）解析。
+  成功返回: {"code":2000000,"data":<文章id>,"success":true}
 
 依赖: requests browser_cookie3 markdown
 """
-import re
 import os
-import sys
-import time
+import re
 import json
+import time
 import traceback
+import urllib.parse
 from os import path
 
 import requests
 import markdown as md_lib
 
 from .ext_cookie import extract_cookies_multi_browsers
-from .util import get_md_title, cookie_str_to_dict, cookie_dict_to_str, parse_md
+from .util import cookie_str_to_dict, cookie_dict_to_str, parse_md
 
-API_BASE = 'https://mp.sohu.com/mpfe'
-ADD_ARTICLE_URL = API_BASE + '/v4/contentManagement/news/addarticle?contentStatus=1'
+API_HOST = 'https://mp.sohu.com'
+PUBLISH_URL = API_HOST + '/mpbp/bp/news/v4/news/publish/v2'
+DRAFT_URL = API_HOST + '/mpbp/bp/news/v4/news/draft/v2'
+ACCOUNT_INFO_URL = API_HOST + '/mpbp/bp/account/info'
 
-EDITOR_REF = 'https://mp.sohu.com/mpfe/v4/article/edit'
+EDITOR_REF = 'https://mp.sohu.com/mpfe/v4/contentManagement/news/addarticle?contentStatus=1'
 UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36')
+
+TITLE_MAX = 72
+OK_CODE = 2000000
 
 
 # ---------------------------------------------------------------------------
@@ -51,19 +59,33 @@ def get_cookies(args):
     return cookies
 
 
+def parse_account_id(cookies):
+    """从 mpCreatorId cookie 解析 accountId。"""
+    raw = cookies.get('mpCreatorId', '')
+    if raw:
+        try:
+            return str(json.loads(urllib.parse.unquote(raw))['id'])
+        except Exception:
+            pass
+    return ''
+
+
 def make_session(args):
     cookies = get_cookies(args)
     if not cookies:
         raise SystemExit(
-            '未获取到搜狐号 cookie，请先在浏览器登录 https://mp.sohu.com/mpfe/v4/article/edit'
-            ' 并选择搜狐号账号')
+            '未获取到搜狐号 cookie，请先在浏览器登录 '
+            'https://mp.sohu.com/mpfe/v4/contentManagement/news/addarticle?contentStatus=1')
 
-    mp_token = cookies.get('mpToken', '')
+    account_id = args.account_id or parse_account_id(cookies)
+    if not account_id:
+        raise SystemExit(
+            'cookie 中缺少 mpCreatorId，无法确定 accountId；'
+            '请登录搜狐号编辑器后重新导出 cookie，或用 -a 指定 accountId')
+
     mp_cv = cookies.get('mp-cv', '')
-
-    if not mp_token:
-        print('警告: cookie 中缺少 mpToken，发布可能失败。'
-              '请在浏览器编辑器页面选择搜狐号账号后重新导出 cookie')
+    if not mp_cv:
+        print('警告: cookie 中缺少 mp-cv，sp-cm 签名头将为空，发布可能失败')
 
     sess = requests.Session()
     sess.headers.update({
@@ -73,57 +95,106 @@ def make_session(args):
         'Origin': 'https://mp.sohu.com',
         'Accept': 'application/json, text/plain, */*',
         'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
     })
-    if mp_token:
-        sess.headers['mpToken'] = mp_token
     if mp_cv:
-        sess.headers['mp-cv'] = mp_cv
-        # sp-cm 签名头部等于 mp-cv cookie 值（逆向自 ClientSignIns.tools.spcm.setHeader）
+        # sp-cm 签名头部等于 mp-cv cookie 值
         sess.headers['sp-cm'] = mp_cv
 
+    sess.account_id = account_id
+    sess.channel_id = None
     return sess
 
 
 # ---------------------------------------------------------------------------
-# Markdown -> 待发布内容
+# 账号信息
+# ---------------------------------------------------------------------------
+
+def get_channel_id(sess, retry=3):
+    """获取账号自身 channelId（发布时必填）。"""
+    last = None
+    for i in range(retry):
+        try:
+            r = sess.get(ACCOUNT_INFO_URL, params={'accountId': sess.account_id}, timeout=30)
+            data = r.json().get('data') or {}
+            cid = data.get('channelId')
+            if cid:
+                return cid
+            last = data
+        except Exception as ex:
+            last = ex
+        time.sleep(2)
+    raise SystemError('获取账号 channelId 失败: %s' % last)
+
+
+# ---------------------------------------------------------------------------
+# Markdown -> 待发布 HTML
 # ---------------------------------------------------------------------------
 
 def md_to_html(md):
-    """将 Markdown 正文转为 HTML。"""
+    """将 Markdown 正文转为 HTML（搜狐号编辑器使用富文本 HTML）。"""
     return md_lib.markdown(md, extensions=['extra', 'sane_lists'])
 
 
 # ---------------------------------------------------------------------------
-# 发布
+# 发布 / 草稿
 # ---------------------------------------------------------------------------
 
-def publish_article(sess, title, content, status=1, retry=5):
-    """发布文章到搜狐号。
-
-    status: 1=发布, 2=草稿（根据 contentStatus 参数，见接口查询参数）
-    返回 (code, data/msg)。
-    """
-    body = {
+def build_body(title, content, channel_id, account_id, brief=''):
+    """按前端 baseParams 结构构造请求体。"""
+    return {
         'title': title,
+        'brief': brief,
         'content': content,
-        # 其余字段根据实际接口要求补充，如：author, source, category, tags, cover 等
+        'channelId': channel_id,
+        'categoryId': -1,
+        'id': 0,
+        'userColumnId': 0,
+        'columnNewsIds': [],
+        'businessCode': 0,
+        'declareOriginal': False,
+        'cover': '',
+        'topicIds': [],
+        'isAd': 0,
+        'userLabels': '[]',
+        'reprint': False,
+        'customTags': '',
+        'creationStatement': None,
+        'additionalStatement': None,
+        'sourceUrl': '',
+        'visibleToLoginedUsers': 0,
+        'attrIds': [],
+        'accountId': int(account_id),
     }
+
+
+def submit_article(sess, title, content, draft=False, retry=5):
+    """发布或存草稿，返回文章 id。"""
+    if not sess.channel_id:
+        sess.channel_id = get_channel_id(sess)
+    body = build_body(title, content, sess.channel_id, sess.account_id)
+    url = DRAFT_URL if draft else PUBLISH_URL
+
     last = None
     for i in range(retry):
         try:
-            r = sess.post(ADD_ARTICLE_URL, json=body, timeout=60)
-            res = r.json()
-            # 搜狐号接口返回约定：code 为 0 或 200 表示成功
-            code = res.get('code', res.get('status', -1))
-            if code in (0, 200):
-                return code, res.get('data', res)
+            r = sess.post(url, params={'accountId': sess.account_id},
+                          json=body, timeout=60)
+            try:
+                res = r.json()
+            except ValueError:
+                raise SystemError('返回非 JSON（登录态可能失效）: %s' % r.text[:200])
+            if res.get('code') == OK_CODE:
+                return res.get('data')
             last = res
-            print(f'发布失败 retry {i}: {res.get("message") or res.get("msg") or res}')
+            print('发布失败 retry %d: %s' % (i, res.get('msg') or res))
+        except SystemError:
+            raise
         except Exception as ex:
             last = ex
-            print(f'发布异常 retry {i}: {ex}')
+            print('发布异常 retry %d: %s' % (i, ex))
         time.sleep(2 + i * 2)
-    raise SystemError(f'发布失败: {last}')
+    raise SystemError('发布失败: %s' % last)
 
 
 # ---------------------------------------------------------------------------
@@ -157,19 +228,15 @@ def post_one(sess, f, args):
     print(f)
     md = open(f, encoding='utf8').read()
     title, body = parse_md(md, f)
+    title = title[:TITLE_MAX]
 
-    # 正文转 HTML（搜狐号编辑器期望 HTML 内容）
     content = md_to_html(body)
 
     action = '存草稿' if args.draft else '发布'
-    print(f'{action}: {title}')
+    print('%s: %s' % (action, title))
     try:
-        code, data = publish_article(
-            sess, title[:100], content,
-            status=2 if args.draft else 1,
-            retry=args.retry,
-        )
-        print('成功:', code, json.dumps(data, ensure_ascii=False)[:500])
+        aid = submit_article(sess, title, content, draft=args.draft, retry=args.retry)
+        print('成功: 文章ID:', aid)
     except SystemError as e:
         print('失败:', e)
         return
@@ -183,6 +250,9 @@ def reg_subparser(subparsers):
     parser.add_argument(
         "-c", "--cookie", default='',
         help="cookie 字符串 (name=v; ...)；默认从 Firefox/Chrome/Edge 提取")
+    parser.add_argument(
+        "-a", "--account-id", dest="account_id", default='',
+        help="搜狐号 accountId；默认从 cookie mpCreatorId 解析")
     parser.add_argument(
         "-d", "--draft", action='store_true', help="存草稿而不发布")
     parser.add_argument(
