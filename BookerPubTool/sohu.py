@@ -4,15 +4,15 @@
 接口通过浏览器访问
 https://mp.sohu.com/mpfe/v4/contentManagement/news/addarticle?contentStatus=1
 
-抓包整理：
+抓包整理（逆向自搜狐号编辑器前端 bundle）：
   * 登录态：浏览器 cookie 中的 .sohu.com 会话（browser_cookie3 直读），
-    需要 mpToken、mp-cv 等字段用于构造请求头。
+    需要 mpToken、mp-cv 等字段。
+  * 签名头部 sp-cm：等于 mp-cv cookie 的值，通过
+    window.ClientSignIns.tools.spcm.setHeader() 注入。
   * 发布文章:
       POST https://mp.sohu.com/mpfe/v4/contentManagement/news/addarticle?contentStatus=1
       body 为 JSON，包含 title / content 等字段。
-  * 签名：前端通过 window.ClientSignIns.tools.setHeader() 注入签名头部，
-    逆向自搜狐号编辑器前端 bundle，此处保留接口框架，签名部分需根据
-    实际抓包结果补充。
+      需要请求头：mpToken（cookie 中的 mpToken）、sp-cm（= mp-cv cookie 值）。
 
 依赖: requests browser_cookie3 markdown
 """
@@ -33,7 +33,7 @@ from .util import get_md_title, cookie_str_to_dict, cookie_dict_to_str, parse_md
 API_BASE = 'https://mp.sohu.com/mpfe'
 ADD_ARTICLE_URL = API_BASE + '/v4/contentManagement/news/addarticle?contentStatus=1'
 
-EDITOR_REF = 'https://mp.sohu.com/'
+EDITOR_REF = 'https://mp.sohu.com/mpfe/v4/article/edit'
 UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36')
 
@@ -54,10 +54,16 @@ def get_cookies(args):
 def make_session(args):
     cookies = get_cookies(args)
     if not cookies:
-        raise SystemExit('未获取到搜狐号 cookie，请先在浏览器登录 mp.sohu.com')
+        raise SystemExit(
+            '未获取到搜狐号 cookie，请先在浏览器登录 https://mp.sohu.com/mpfe/v4/article/edit'
+            ' 并选择搜狐号账号')
 
     mp_token = cookies.get('mpToken', '')
     mp_cv = cookies.get('mp-cv', '')
+
+    if not mp_token:
+        print('警告: cookie 中缺少 mpToken，发布可能失败。'
+              '请在浏览器编辑器页面选择搜狐号账号后重新导出 cookie')
 
     sess = requests.Session()
     sess.headers.update({
@@ -72,6 +78,8 @@ def make_session(args):
         sess.headers['mpToken'] = mp_token
     if mp_cv:
         sess.headers['mp-cv'] = mp_cv
+        # sp-cm 签名头部等于 mp-cv cookie 值（逆向自 ClientSignIns.tools.spcm.setHeader）
+        sess.headers['sp-cm'] = mp_cv
 
     return sess
 
