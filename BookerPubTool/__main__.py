@@ -23,6 +23,7 @@ from . import weibo
 from . import xhs
 from . import bili_video
 from . import sohu
+from . import juejin
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -55,6 +56,7 @@ def main():
     xhs.reg_subparser(subparsers)
     bili_video.reg_subparser(subparsers)
     sohu.reg_subparser(subparsers)
+    juejin.reg_subparser(subparsers)
 
     args = parser.parse_args()
     args.func(args)
