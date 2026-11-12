@@ -237,18 +237,25 @@ def publish_csdn(args):
         except:
             traceback.print_exc()
 
-def post_one(f, info, cookies, args):
-    print(f)
-    md = open(f, encoding='utf8').read()
+def parse_md(fname):
+    """返回 (title, body)。标题取第一个 # 行，正文为去掉标题行后的其余内容。"""
+    with open(fname, encoding='utf-8') as f:
+        md = f.read()
     # 图片标记转为 URL（与旧版行为一致）
     md = re.sub(r'!\[[^\]]*\]\(([^\)]+)\)', r'<\1>', md)
     title, pos = get_md_title(md)
-    if not title:
-        print('%s MD 文件无标题' % f)
-        return
+    if title is None:
+        title = path.splitext(path.basename(fname))[0]
+        body = md
+    else:
+        body = md[pos[1]:]
     if len(title) < 5:
         title *= 5
-    body = md[pos[1]:]
+    return title[:100], body.strip()
+
+def post_one(f, info, cookies, args):
+    print(f)
+    title, body = parse_md(f)
 
     action = '存草稿' if args.draft else '发布'
     print('%s: %s' % (action, title))

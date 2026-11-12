@@ -84,16 +84,18 @@ def make_session(cookies: dict) -> requests.Session:
 def parse_md(fname):
     """返回 (title, body)。标题取第一个 # 行，正文为去掉标题行后的其余内容。"""
     with open(fname, encoding='utf-8') as f:
-        text = f.read()
-    title, span = get_md_title(text)
+        md = f.read()
+    # 图片标记转为 URL（与旧版行为一致）
+    md = re.sub(r'!\[[^\]]*\]\(([^\)]+)\)', r'<\1>', md)
+    title, pos = get_md_title(md)
     if title is None:
         title = path.splitext(path.basename(fname))[0]
-        body = text
+        body = md
     else:
-        body = text[span[1]:].lstrip('\n')
-        if body.startswith('\n'):
-            body = body[1:]
-    return title, body.strip()
+        body = md[pos[1]:]
+    if len(title) < 5:
+        title *= 5
+    return title[:100], body.strip()
 
 
 def upload_local_images(s, fname, body, category_id=0, visible=True):
