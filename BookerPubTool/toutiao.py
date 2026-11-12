@@ -182,8 +182,14 @@ def gen_title_id():
                       int.from_bytes(os.urandom(8), 'big') % 10 ** 16)
 
 
-def publish_article(sess, title, content, save=False, cover_type=2, retry=5):
-    """发布文章或存草稿，返回 (code, data)。"""
+def publish_article(sess, title, content, draft=False, cover_type=2, retry=5):
+    """发布文章（默认）或存草稿，返回 (code, data)。
+
+    实机抓包确认（2026-11）：头条该接口的 save 语义为
+      * save=1, entrance=main  -> 正式发布（返回 code=0 "提交成功"）
+      * save=0                  -> 草稿（当前服务端对无签名请求一律返回 7050，不可用）
+    旧实现把 save 用反了：默认发布发 save=0 触发 7050，而 -d 发 save=1 实际是发布。
+    """
     word_cnt = len(re.sub(r'<[^>]+>', '', content))
     title_id = gen_title_id()
     extra = {
@@ -211,8 +217,8 @@ def publish_article(sess, title, content, save=False, cover_type=2, retry=5):
         'title_id': title_id,
         'mp_editor_stat': '{}',
         'is_refute_rumor': '0',
-        'save': '1' if save else '0',
-        'entrance': '',
+        'save': '0' if draft else '1',
+        'entrance': '' if draft else 'main',
         'timer_status': '0',
         'timer_time': '',
         'educluecard': '',
@@ -298,7 +304,7 @@ def post_one(sess, f, args):
     action = '存草稿' if args.draft else '发布'
     print(f'{action}: {title}')
     code, data = publish_article(
-        sess, title[:100], html, save=args.draft, retry=args.retry)
+        sess, title[:100], html, draft=args.draft, retry=args.retry)
     pgc_id = data.get('pgc_id') or ''
     url = 'https://mp.toutiao.com/preview_article/?pgc_id=' + pgc_id if pgc_id else ''
     print('成功:', code, 'pgc_id:', pgc_id, url)
@@ -313,7 +319,9 @@ def reg_subparser(subparsers):
         "-c", "--cookie", default='',
         help="cookie 字符串 (name=v; ...)；默认从 Firefox/Chrome/Edge 提取")
     parser.add_argument(
-        "-d", "--draft", action='store_true', help="存草稿而不发布")
+        "-d", "--draft", action='store_true',
+        help="存草稿（注意：头条草稿接口当前对无签名请求返回 7050，通常不可用；"
+             "默认即正式发布）")
     parser.add_argument(
         "-r", "--retry", type=int, default=5, help="上传/发布重试次数 (默认 5)")
     parser.add_argument(
