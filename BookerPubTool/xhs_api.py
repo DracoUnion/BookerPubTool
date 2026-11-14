@@ -3,6 +3,7 @@ from __future__ import annotations
 import json, logging, mimetypes, os, random, time
 from typing import Any
 from urllib.parse import urlencode
+import xml.etree.ElementTree as ET
 import httpx
 logger = logging.getLogger(__name__)
 EDITH_HOST = "https://edith.xiaohongshu.com"
@@ -149,8 +150,9 @@ class XhsClient:
                     w = 2**i + random.uniform(0,1); logger.warning("HTTP %d retry in %.1fs", resp.status_code, w)
                     time.sleep(w); continue
                 return resp
-            except (httpx.TimeoutException, httpx.NetworkError) as e:
-                last=e; w = 2**i + random.uniform(0,1); logger.warning("Net error %s retry in %.1fs", e, w); time.sleep(w)
+            except httpx.HTTPError as e:
+                last=e; w = 2**i + random.uniform(0,1)
+                logger.warning("HTTP error %s retry in %.1fs", getattr(e,"__class__").__name__, w); time.sleep(w)
         if last: raise XhsApiError("Failed after %d retries: %s" % (self._max_retries, last)) from last
         raise XhsApiError("Failed: HTTP %s" % resp.status_code)
     def _post(self, uri, data, hdr=None):
@@ -168,13 +170,91 @@ class XhsClient:
         return self._resp(r)
     def get_upload_tokens(self, file_type, count):
         d = self._cget("/api/media/v1/upload/web/permit", {"biz_name":"spectrum","scene":file_type,"file_count":count,"version":1,"source":"web"})
-        p = d["uploadTempPermits"][0]
-        return p["fileIds"], [p["token"]]*len(p["fileIds"])
-    def upload_file(self, fid, token, path, ct=None):
-        with open(path,"rb") as f: fd = f.read()
+        permits = d["uploadTempPermits"]
+        # permit 接口返回多个候选 permit：优先使用带 uploadAddr 的（可走
+        # CDN / 高速上传，支持 COS 分片）；否则回退到第一个
+        p = permits[0]
+        for x in permits:
+            if x.get("uploadAddr"):
+                p = x; break
+        return p["fileIds"], [p["token"]]*len(p["fileIds"]), p.get("uploadAddr") or UPLOAD_HOST
+    def _cos_put_url(self, addr, fid):
+        return f"https://{addr}/{fid}"
+    def upload_file(self, fid, token, path, ct=None, addr=None, part_size=100*1024*1024, min_multipart=100*1024*1024):
+        """PUT 上传到 COS。
+
+        单片 PUT：小文件（< min_multipart）走普通一次性 PUT，但必须显式传
+        Content-Length（httpx 的 generator 不会自动算长度）+ 流式生成器
+        避免把整个文件读进内存；
+        分片 PUT：大文件（>= min_multipart）走 COS multipart API
+        （?uploads= 拿 uploadId，PUT ?partNumber=...&uploadId=，
+        POST ?uploadId= 完成），绕过 ros-upload 前置 nginx 对单请求
+        body 大小的限制（实测 ~200MB 以上 413 / 协议断开）。
+        """
+        import os
+        addr = addr or UPLOAD_HOST
         ct = ct or mimetypes.guess_type(path)[0] or "application/octet-stream"
-        r = self._req("PUT", UPLOAD_HOST+"/"+fid, headers={"X-Cos-Security-Token":token,"Content-Type":ct}, content=fd)
-        if r.status_code >= 400: raise XhsApiError("Upload failed: %d %s" % (r.status_code, r.reason_phrase))
+        size = os.path.getsize(path)
+        base = self._cos_put_url(addr, fid)
+        def hdrs(cl):
+            h = {"X-Cos-Security-Token":token,"Content-Type":ct}
+            if cl is not None: h["Content-Length"] = str(cl)
+            return h
+
+        def _stream():
+            with open(path,"rb") as f:
+                while True:
+                    b = f.read(1<<20)
+                    if not b: break
+                    yield b
+
+        def _single_put():
+            r = self._req("PUT", base, headers=hdrs(size), content=_stream())
+            if r.status_code >= 400:
+                raise XhsApiError("Upload failed: %d %s body=%s" % (
+                    r.status_code, r.reason_phrase, r.text[:200]))
+
+        def _multipart():
+            r_up = self._req("POST", base + "?uploads=", headers=hdrs(0), content=b"")
+            if r_up.status_code != 200:
+                raise XhsApiError("COS init failed: %d %s" % (r_up.status_code, r_up.text[:200]))
+            up_xml = ET.fromstring(r_up.text)
+            upload_id = up_xml.findtext("UploadId")
+            if not upload_id:
+                raise XhsApiError("COS init missing uploadId: %s" % r_up.text[:200])
+            nparts = (size + part_size - 1) // part_size
+            parts = []
+            with open(path,"rb") as f:
+                for i in range(nparts):
+                    chunk = f.read(part_size)
+                    r_part = self._req(
+                        "PUT", f"{base}?partNumber={i+1}&uploadId={upload_id}",
+                        headers=hdrs(len(chunk)), content=chunk)
+                    if r_part.status_code != 200:
+                        raise XhsApiError("COS part %d/%d failed: %d %s" % (
+                            i+1, nparts, r_part.status_code, r_part.text[:200]))
+                    parts.append((i+1, r_part.headers["ETag"]))
+                    logger.info("COS part %d/%d (%.1f MB)", i+1, nparts, len(chunk)/1048576)
+            comp = "<CompleteMultipartUpload>" + "".join(
+                f'<Part><PartNumber>{pn}</PartNumber><ETag>{et}</ETag></Part>'
+                for pn,et in parts) + "</CompleteMultipartUpload>"
+            r_comp = self._req("POST", f"{base}?uploadId={upload_id}",
+                               headers=hdrs(len(comp)), content=comp.encode())
+            if r_comp.status_code != 200:
+                raise XhsApiError("COS complete failed: %d %s" % (
+                    r_comp.status_code, r_comp.text[:300]))
+            logger.info("COS multipart complete: %d parts", nparts)
+
+        use_multipart = size >= min_multipart
+        do = _multipart if use_multipart else _single_put
+        for attempt in range(3):
+            try:
+                do(); return
+            except XhsApiError:
+                if attempt == 2: raise
+                wait = 2**(attempt+1)
+                logger.warning("upload_file retry in %ds", wait)
+                time.sleep(wait)
     def _build_note(self, ntype, title, desc, img, vid, topics, priv):
         bb = {"version":1,"noteId":0,"noteOrderBind":{},"notePostTiming":{"postTime":None},"noteCollectionBind":{"id":""}}
         q = chr(34)
@@ -208,8 +288,10 @@ def open_client(cookies=None): return XhsClient(cookies if cookies is not None e
 def publish_image_note(title, desc, paths, topics=None, priv=False, cookies=None):
     c = open_client(cookies)
     try:
-        fids, toks = c.get_upload_tokens("image", len(paths))
-        for f,t,p in zip(fids,toks,paths): logger.info("Upload img: %s", p); c.upload_file(f,t,p)
+        fids, toks, addr = c.get_upload_tokens("image", len(paths))
+        for f,t,p in zip(fids,toks,paths):
+            logger.info("Upload img: %s", p)
+            c.upload_file(f,t,p, addr=addr)
         logger.info("Publish image note: %s", title)
         return c.create_image_note(title, desc, fids, topics, priv)
     finally: c.close()
@@ -217,12 +299,14 @@ def publish_image_note(title, desc, paths, topics=None, priv=False, cookies=None
 def publish_video_note(title, desc, vid_path, cover_path=None, topics=None, priv=False, cookies=None):
     c = open_client(cookies)
     try:
-        vids, vtoks = c.get_upload_tokens("video", 1)
-        logger.info("Upload video: %s", vid_path); c.upload_file(vids[0], vtoks[0], vid_path)
+        vids, vtoks, vaddr = c.get_upload_tokens("video", 1)
+        logger.info("Upload video: %s", vid_path)
+        c.upload_file(vids[0], vtoks[0], vid_path, addr=vaddr)
         cover_id = None
         if cover_path and os.path.exists(cover_path):
-            cids, ctoks = c.get_upload_tokens("image", 1)
-            logger.info("Upload cover: %s", cover_path); c.upload_file(cids[0], ctoks[0], cover_path)
+            cids, ctoks, caddr = c.get_upload_tokens("image", 1)
+            logger.info("Upload cover: %s", cover_path)
+            c.upload_file(cids[0], ctoks[0], cover_path, addr=caddr)
             cover_id = cids[0]
         logger.info("Publish video note: %s", title)
         return c.create_video_note(title, desc, vids[0], cover_id, topics, priv)
