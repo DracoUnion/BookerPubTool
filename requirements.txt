@@ -8,3 +8,7 @@ playwright
 markdown
 pygments
 premailer
+browser_cookie3
+xhshow
+httpx
+pycryptodome

@@ -20,7 +20,9 @@ from . import csdn
 from . import cnblogs
 from . import toutiao
 from . import weibo
-from . import xhs
+from . import xhs_art
+from . import xhs_img
+from . import xhs_vid
 from . import bili_video
 from . import sohu
 from . import juejin
@@ -53,7 +55,9 @@ def main():
     cnblogs.reg_subparser(subparsers)
     toutiao.reg_subparser(subparsers)
     weibo.reg_subparser(subparsers)
-    xhs.reg_subparser(subparsers)
+    xhs_art.reg_subparser(subparsers)
+    xhs_img.reg_subparser(subparsers)
+    xhs_vid.reg_subparser(subparsers)
     bili_video.reg_subparser(subparsers)
     sohu.reg_subparser(subparsers)
     juejin.reg_subparser(subparsers)

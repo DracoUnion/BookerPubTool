@@ -46,6 +46,8 @@ dependencies = [
     "browser_cookie3",
     "xhshow",
     "quickjs",
+    "httpx",
+    "pycryptodome",
 ]
 
 [project.urls]

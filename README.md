@@ -18,7 +18,7 @@ pip install -e .       # 开发模式，改动即时生效
 - Docker 发布需要本机安装 `docker`
 - npm 发布需要本机安装 `node` / `npm`
 - MOBI / AZW3 转换需要 `calibre` 的 `ebook-convert`
-- 多平台发布（`gzh` / `xhs` / `jike` / `douyin` / `xiaoyuzhou` / `shipinhao`）需要安装 Playwright：
+- 多平台发布（`gzh` / `jike` / `douyin` / `xiaoyuzhou` / `shipinhao`）需要安装 Playwright：
   ```bash
   pip install playwright
   python -m playwright install chromium
@@ -38,7 +38,7 @@ python -m BookerPubTool <cmd> [args]
 ```text
 { pub-docker, pub-pypi, conf-pypi, pub-npm, conf-npm, ebook2site,
   libgen, zhihu-msg, zhihu-crawl-uid, git-init, git-commit, git-push,
-  kancloud, gzh, xhs, jike, douyin, xiaoyuzhou, shipinhao,
+  kancloud, gzh, xhs-art, xhs-img, xhs-vid, jike, douyin, xiaoyuzhou, shipinhao,
   weibo, toutiao, bili-video }
 ```
 
@@ -71,7 +71,7 @@ bpt pub-docker ./docs
 
 ```bash
 bpt gzh --input ./out/文章.md --title "标题" --author "01fish" --digest "摘要" --cover ./out/封面.png
-bpt xhs --input ./out/文章-小红书文案.txt --images-dir ./out/images --preview
+bpt xhs-art ./out/文章.md
 bpt jike --input ./out/文章-即刻文案.txt
 bpt douyin --video ./out/video.mp4 --title "标题" --description "描述" --tag "#标签"
 bpt xiaoyuzhou --audio ./out/podcast.mp3 --title "EP01丨标题" --description "简介" --show-notes "文稿"
@@ -213,7 +213,9 @@ bpt libgen lightnovel ~/book.epub
 | 命令 | 平台 | 使用浏览器 |
 | --- | --- | --- |
 | `gzh` | 公众号（微信 API 推草稿） | 否 |
-| `xhs` | 小红书 | 是 |
+| `xhs-art` | 小红书（纯文本笔记） | 否（HTTP API） |
+| `xhs-img` | 小红书（图片系列） | 否（HTTP API） |
+| `xhs-vid` | 小红书（视频笔记） | 否（HTTP API） |
 | `jike` | 即刻 | 是 |
 | `douyin` | 抖音 | 是 |
 | `xiaoyuzhou` | 小宇宙 | 是 |
@@ -257,36 +259,50 @@ bpt gzh --input ./out/文章.md --title "标题" --author "01fish" --digest "摘
 bpt gzh --input ./out/文章_preview.html --image ./out/配图1.png --image ./out/配图2.png --preview
 ```
 
-### `xhs` — 发布到小红书
+### `xhs-art` — 发布 MD 文章到小红书（纯文本笔记）
 
 ```text
-usage: bpt xhs [-h] [--input INPUT] [--images-dir IMAGES_DIR] [-p] [-H]
+usage: bpt xhs-art article.md [-tt TITLE] [-d DESC] [-c COOKIE]
 ```
 
 | 参数 | 说明 |
 | --- | --- |
-| `--input` | 小红书文案 Markdown 文件路径（含标题/正文/标签） |
-| `--images-dir` | 图片目录（上传其中的 png/jpg/webp 文件） |
+| `article` | 文章 Markdown 文件路径 |
+| `-tt` | 笔记标题（默认取 MD 首个标题） |
+| `-d` | 笔记正文（默认取 MD 正文） |
+| `-c` | cookie 字符串（默认 browser_cookie3 从浏览器提取） |
 
-从 `--input` 的 Markdown 中解析标题、正文与标签，支持两种格式：
-
-```text
-格式 A（content-pipeline xiaohongshu 步骤产出）：
-标题：小红书标题
-
-正文内容...
-
-#AI工具 #ClaudeCode #效率
-
-格式 B（普通 Markdown，标题取第一行 H1）：
-# 一级标题
-
-正文
-```
+Cookie 需包含 `a1` 与 `web_session`，默认从本机浏览器（Firefox/Chrome/Edge/Brave）提取，也可通过 `-c` 显式传入。
 
 ```bash
-bpt xhs --input ./out/文章-小红书文案.txt --images-dir ./out/images
-bpt xhs --input ./out/文章-小红书文案.txt --images-dir ./out/images --preview
+bpt xhs-art ./out/文章.md
+bpt xhs-art ./out/文章.md -tt "自定义标题" -c "a1=...; web_session=..."
+```
+
+### `xhs-img` — 发布图片系列到小红书
+
+```text
+usage: bpt xhs-img images... [-tt TITLE] [-d DESC] [-c COOKIE]
+```
+
+按顺序上传多张图片并发布为图片系列笔记。标题默认取第一张图片文件名（无扩展名）。
+
+```bash
+bpt xhs-img 1.png 2.png 3.png
+bpt xhs-img *.jpg -tt "多图笔记标题"
+```
+
+### `xhs-vid` — 发布视频到小红书
+
+```text
+usage: bpt xhs-vid video [-tt TITLE] [-d DESC] [-c COVER] [-ck COOKIE]
+```
+
+上传视频文件（可选封面图）并发布为视频笔记。标题默认取视频文件名（无扩展名）。
+
+```bash
+bpt xhs-vid demo.mp4
+bpt xhs-vid demo.mp4 -tt "视频标题" -c cover.png
 ```
 
 ### `jike` — 发布到即刻
@@ -391,7 +407,7 @@ usage: bpt shipinhao [-h] [--intro INTRO] [--outro OUTRO] [--prompts PROMPTS]
 bpt shipinhao --intro ./out/intro.mp4 --outro ./out/outro.mp4 --prompts ./out/prompts.md
 ```
 
-> 浏览器抓取类命令（`xhs`/`jike`/`douyin`/`xiaoyuzhou`）使用 Playwright 弹出的可见浏览器，需在页面里
+> 浏览器抓取类命令（`jike`/`douyin`/`xiaoyuzhou`）使用 Playwright 弹出的可见浏览器，需在页面里
 > 手动登录对应创作者后台（登录状态不跨运行保存）。页面 UI 升级时选择器可能失效，需相应调整脚本。
 
 ### `bili-video` — 发布视频到 B 站
