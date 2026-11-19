@@ -2,6 +2,7 @@ import argparse
 import sys
 from . import __version__
 from . import docker
+from . import dwz
 from . import pypi
 from . import npm
 from . import ebook2site
@@ -37,6 +38,7 @@ def main():
     subparsers = parser.add_subparsers()
 
     docker.reg_subparser(subparsers)
+    dwz.reg_subparser(subparsers)
     pypi.reg_subparser(subparsers)
     npm.reg_subparser(subparsers)
     ebook2site.reg_subparser(subparsers)
